@@ -1,0 +1,795 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0e1116">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<title>Comfy Remote</title>
+<style>
+:root{--bg:#0e1116;--card:#171b22;--card2:#1f252e;--line:#2a313b;--text:#e8ecf1;--mute:#8a94a3;--acc:#7aa7ff;--acc2:#a78bfa;--ok:#4cc38a;--warn:#f5b454;--bad:#ff6b6b;--r:14px}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html{background:var(--bg)}
+body{margin:0 auto;max-width:760px;background:var(--bg);color:var(--text);font:15px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;padding:0 14px calc(110px + env(safe-area-inset-bottom))}
+select,input,textarea,button{font:inherit;color:inherit}
+select,input[type=text],input[type=number],input[type=password],textarea{width:100%;background:var(--card2);border:1px solid var(--line);border-radius:10px;padding:10px 12px;outline:none}
+select:focus,input:focus,textarea:focus{border-color:var(--acc)}
+textarea{min-height:120px;resize:vertical}
+button{background:var(--card2);border:1px solid var(--line);border-radius:10px;padding:9px 14px;cursor:pointer;white-space:nowrap}
+button:active{transform:scale(.97)}
+button:disabled{opacity:.45;pointer-events:none}
+button.pri{background:linear-gradient(135deg,var(--acc),var(--acc2));border:0;color:#0b1020;font-weight:700}
+button.ok{border-color:#2d6b4f;color:var(--ok)}
+button.bad{border-color:#6b2d2d;color:var(--bad)}
+.row{display:flex;gap:8px;align-items:center}
+.row>*{min-width:0}
+.grow{flex:1}
+.mute{color:var(--mute);font-size:13px}
+.err{color:var(--bad);white-space:pre-wrap;font-size:13px}
+.hide{display:none!important}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:14px;margin:12px 0}
+.card>h3,details>summary{margin:0 0 4px;font-size:12px;color:var(--mute);font-weight:700;text-transform:uppercase;letter-spacing:.06em}
+details>summary{cursor:pointer;list-style:none;margin:0}
+details>summary::before{content:"▸ "}details[open]>summary::before{content:"▾ "}
+label.f{display:flex;justify-content:space-between;gap:8px;margin:12px 0 5px;font-size:13px;color:var(--mute)}
+label.f b{color:var(--text);font-weight:500}
+/* header */
+header{position:sticky;top:0;z-index:10;background:linear-gradient(var(--bg) 85%,transparent);padding:calc(10px + env(safe-area-inset-top)) 0 6px}
+.pc{display:flex;align-items:center;gap:10px}
+.dot{width:10px;height:10px;border-radius:50%;background:var(--mute);flex:0 0 auto}
+.dot.running{background:var(--ok);box-shadow:0 0 10px var(--ok)}
+.dot.starting{background:var(--warn);animation:pulse 1s infinite}
+.dot.stopped{background:var(--bad)}
+@keyframes pulse{50%{opacity:.3}}
+.pc .t{flex:1;min-width:0}
+.pc .t b{display:block;font-size:15px}
+.pc .t span{font-size:12px;color:var(--mute);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block}
+.tabs{display:flex;gap:4px;margin-top:10px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:4px}
+.tabs button{flex:1;border:0;background:transparent;padding:8px 4px;font-size:13px;color:var(--mute)}
+.tabs button.on{background:var(--card2);color:var(--text)}
+.tabs .badge{display:inline-block;min-width:16px;padding:0 4px;margin-left:3px;border-radius:8px;background:var(--acc);color:#0b1020;font-size:11px;font-weight:700}
+/* form */
+.chips{display:flex;gap:6px;overflow-x:auto;padding-bottom:2px;scrollbar-width:none}
+.chips button{flex:0 0 auto;border-radius:20px;padding:7px 14px;font-size:13px}
+.chips button.on{background:var(--acc);border-color:var(--acc);color:#0b1020;font-weight:600}
+.drop{border:1px dashed var(--line);border-radius:12px;padding:10px;text-align:center}
+.drop img{max-width:100%;max-height:300px;border-radius:8px;display:block;margin:0 auto 8px}
+.range{display:flex;gap:10px;align-items:center}
+.range input[type=range]{flex:1;accent-color:var(--acc)}
+.range input[type=number]{width:96px;flex:0 0 96px}
+.switch{display:flex;align-items:center;gap:8px}
+.switch input{width:20px;height:20px;accent-color:var(--acc)}
+.seed{display:flex;gap:6px}
+.seed button{padding:9px 11px}
+.seed button.on{border-color:var(--acc);color:var(--acc)}
+/* bottom bar */
+#bar{position:fixed;left:0;right:0;bottom:0;z-index:10;background:#0b0e13f0;backdrop-filter:blur(8px);border-top:1px solid var(--line);padding:10px 14px calc(10px + env(safe-area-inset-bottom))}
+#bar .in{max-width:760px;margin:0 auto}
+#bar .pri{flex:1;padding:14px;font-size:16px}
+#bar select{width:74px;flex:0 0 74px}
+.prog{height:4px;background:var(--line);border-radius:2px;overflow:hidden;margin-top:8px}
+.prog i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--acc),var(--acc2));transition:width .25s}
+/* results & gallery */
+.media img,.media video{width:100%;border-radius:10px;display:block;background:#000}
+.acts{display:flex;gap:6px;margin-top:8px}
+.acts>*{flex:1;text-align:center;text-decoration:none;color:inherit}
+.gal{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.gal .it{position:relative;aspect-ratio:1;border-radius:8px;overflow:hidden;background:#000;cursor:pointer}
+.gal img,.gal video{width:100%;height:100%;object-fit:cover}
+.gal .play{position:absolute;right:5px;bottom:5px;font-size:12px;background:#000a;border-radius:6px;padding:1px 5px}
+#live{width:100%;border-radius:10px;margin-top:10px}
+.job{display:flex;gap:8px;align-items:center;padding:8px 0;border-top:1px solid var(--line)}
+.job:first-of-type{border-top:0}
+pre{white-space:pre-wrap;word-break:break-all;font:12px/1.4 ui-monospace,Consolas,monospace;background:#0a0c10;border:1px solid var(--line);border-radius:10px;padding:10px;max-height:60vh;overflow:auto;margin:8px 0 0}
+.stat{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;text-align:center}
+.stat div{background:var(--card2);border-radius:10px;padding:8px}
+.stat b{display:block;font-size:18px}
+/* overlays */
+.ov{position:fixed;inset:0;z-index:50;background:#000e;display:flex;flex-direction:column;padding:calc(12px + env(safe-area-inset-top)) 12px calc(12px + env(safe-area-inset-bottom))}
+.ov .media{flex:1;display:flex;align-items:center;justify-content:center;min-height:0}
+.ov .media img,.ov .media video{max-height:100%;width:auto;max-width:100%;object-fit:contain}
+#login{align-items:center;justify-content:center;background:var(--bg)}
+#login .card{width:100%;max-width:340px;text-align:center}
+#login input{text-align:center;font-size:24px;letter-spacing:.3em;margin:14px 0}
+#toast{position:fixed;left:50%;bottom:calc(96px + env(safe-area-inset-bottom));transform:translateX(-50%);z-index:60;background:var(--card2);border:1px solid var(--line);border-radius:10px;padding:10px 14px;font-size:14px;max-width:90vw;opacity:0;transition:opacity .2s;pointer-events:none}
+#toast.show{opacity:1}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="pc">
+    <span id="dot" class="dot"></span>
+    <div class="t"><b id="pcState">Connecting…</b><span id="pcInfo">&nbsp;</span></div>
+    <button id="startBtn" class="ok hide">▶ Start</button>
+    <button id="stopBtn2" class="bad hide">⏻ Stop</button>
+  </div>
+  <div class="tabs">
+    <button data-tab="create" class="on">Create</button>
+    <button data-tab="result">Result<span id="jobBadge" class="badge hide"></span></button>
+    <button data-tab="gallery">Gallery</button>
+    <button data-tab="pc">PC</button>
+  </div>
+</header>
+
+<main>
+  <!-- CREATE -->
+  <section id="tab-create">
+    <div class="card">
+      <h3>Workflow</h3>
+      <div class="row" style="margin-top:6px">
+        <div id="wfChips" class="chips grow"></div>
+        <button id="fileBtn" title="Import API workflow JSON">＋</button>
+        <input id="fileIn" type="file" accept=".json,application/json" class="hide">
+      </div>
+      <div id="saveBox" class="hide" style="margin-top:10px">
+        <div class="mute">Imported from file. Save it on the PC?</div>
+        <div class="row" style="margin-top:6px"><input id="saveName" type="text" placeholder="Name"><button id="saveBtn">Save</button></div>
+      </div>
+    </div>
+    <div id="formMsg" class="card mute hide"></div>
+    <div id="form"></div>
+    <div class="row" style="margin:4px 0 12px">
+      <button id="resetBtn">↺ Reset to workflow defaults</button>
+      <span class="grow"></span>
+      <button id="delWfBtn" class="bad hide">Delete workflow</button>
+    </div>
+  </section>
+
+  <!-- RESULT -->
+  <section id="tab-result" class="hide">
+    <div class="card">
+      <div class="row"><h3 class="grow" style="margin:0">Now</h3><button id="interruptBtn" class="bad">■ Stop current</button></div>
+      <div id="status" class="mute" style="margin-top:8px">Idle</div>
+      <div class="prog"><i id="progBar"></i></div>
+      <img id="live" class="hide" alt="Live preview">
+    </div>
+    <div class="card">
+      <div class="row"><h3 class="grow" style="margin:0">Queue</h3><button id="clearQBtn">Clear waiting</button></div>
+      <div id="queueList" class="mute" style="margin-top:6px">Empty</div>
+    </div>
+    <div id="results"></div>
+  </section>
+
+  <!-- GALLERY -->
+  <section id="tab-gallery" class="hide">
+    <div class="row" style="margin:12px 0"><span class="mute grow">Recent outputs · tap to open</span><button id="galRefresh">↻</button></div>
+    <div id="gal" class="gal"></div>
+  </section>
+
+  <!-- PC -->
+  <section id="tab-pc" class="hide">
+    <div class="card">
+      <h3>ComfyUI</h3>
+      <div class="row" style="margin-top:8px">
+        <button id="startBtn3" class="ok grow">▶ Start</button>
+        <button id="restartBtn" class="grow">⟳ Restart</button>
+        <button id="stopBtn3" class="bad grow">⏻ Stop</button>
+      </div>
+    </div>
+    <div class="card">
+      <h3>GPU</h3>
+      <div id="gpuName" class="mute" style="margin-bottom:8px">—</div>
+      <div class="stat">
+        <div><b id="gUtil">–</b><span class="mute">Load</span></div>
+        <div><b id="gMem">–</b><span class="mute">VRAM</span></div>
+        <div><b id="gTemp">–</b><span class="mute">Temp</span></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="row"><h3 class="grow" style="margin:0">ComfyUI log</h3><label class="switch mute"><input id="logAuto" type="checkbox" checked> live</label><button id="logBtn">↻</button></div>
+      <pre id="log">…</pre>
+    </div>
+    <div class="card mute" id="apiKeyInfo"></div>
+  </section>
+</main>
+
+<div id="bar"><div class="in">
+  <div class="row">
+    <select id="runCount" title="How many runs"><option>1</option><option>2</option><option>3</option><option>4</option><option>6</option><option>8</option></select>
+    <button id="runBtn" class="pri">✦ Generate</button>
+  </div>
+  <div class="prog"><i id="progBar2"></i></div>
+</div></div>
+
+<div id="viewer" class="ov hide">
+  <div class="row"><span id="vName" class="mute grow" style="overflow:hidden;text-overflow:ellipsis"></span><button id="vClose">✕</button></div>
+  <div class="media" id="vMedia"></div>
+  <div class="acts"><a id="vSave" download><button style="width:100%">⬇ Save</button></a><button id="vReuse">↺ Use as input</button></div>
+</div>
+
+<div id="login" class="ov hide">
+  <div class="card">
+    <h3>Comfy Remote</h3>
+    <div class="mute">Enter the PIN from config.json on your PC</div>
+    <input id="pin" type="password" inputmode="numeric" autocomplete="current-password" maxlength="32">
+    <button id="loginBtn" class="pri" style="width:100%;padding:12px">Unlock</button>
+    <div id="loginErr" class="err" style="margin-top:10px"></div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+'use strict';
+const $ = s => document.querySelector(s);
+const $$ = s => [...document.querySelectorAll(s)];
+const C = '/comfy';
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const clone = o => JSON.parse(JSON.stringify(o));
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const store = {
+  get(k, d = null){ try { const v = localStorage.getItem(k); return v === null ? d : JSON.parse(v); } catch { return d; } },
+  set(k, v){ try { localStorage.setItem(k, JSON.stringify(v)); } catch {} }
+};
+const clientId = store.get('cr:cid') || ('cr-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 10));
+store.set('cr:cid', clientId);
+
+function toast(msg, ms = 2500){
+  const t = $('#toast'); t.textContent = msg; t.classList.add('show');
+  clearTimeout(toast.h); toast.h = setTimeout(() => t.classList.remove('show'), ms);
+}
+
+// ---------------------------------------------------------------- HTTP
+async function api(path, opts = {}){
+  const r = await fetch(path, { credentials: 'same-origin', ...opts });
+  if (r.status === 401) { showLogin(); throw new Error('Login required'); }
+  return r;
+}
+async function jget(path){
+  const r = await api(path);
+  if (!r.ok) throw new Error((await r.text()).slice(0, 300) || r.status);
+  return r.json();
+}
+async function jpost(path, body, method = 'POST'){
+  const r = await api(path, { method, headers: { 'Content-Type': 'application/json' }, body: body === undefined ? undefined : JSON.stringify(body) });
+  const txt = await r.text();
+  let j; try { j = JSON.parse(txt); } catch { j = { error: txt }; }
+  if (!r.ok) { const e = new Error(typeof j.error === 'string' ? j.error : (j.error && j.error.message) || txt || r.status); e.body = j; throw e; }
+  return j;
+}
+
+// ---------------------------------------------------------------- login
+function showLogin(){ $('#login').classList.remove('hide'); setTimeout(() => $('#pin').focus(), 50); }
+async function doLogin(){
+  $('#loginErr').textContent = '';
+  const r = await fetch('/api/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ pin: $('#pin').value }) });
+  if (!r.ok) { $('#loginErr').textContent = await r.text(); return; }
+  $('#login').classList.add('hide'); $('#pin').value = '';
+  boot();
+}
+$('#loginBtn').onclick = doLogin;
+$('#pin').onkeydown = e => { if (e.key === 'Enter') doLogin(); };
+
+// ---------------------------------------------------------------- PC status
+let pcState = null;
+async function pollStatus(){
+  try {
+    const s = await jget('/api/status');
+    const prev = pcState; pcState = s.state;
+    $('#dot').className = 'dot ' + s.state;
+    $('#pcState').textContent = { running: 'ComfyUI running', starting: 'ComfyUI starting…', stopped: 'ComfyUI stopped' }[s.state];
+    const g = s.gpu;
+    $('#pcInfo').textContent = g ? `GPU ${g.util}% · ${(g.mem_used / 1024).toFixed(1)}/${(g.mem_total / 1024).toFixed(0)} GB · ${g.temp}°C`
+      : (s.exit_code != null ? `Exited with code ${s.exit_code}. See PC → log` : ' ');
+    if (g) {
+      $('#gpuName').textContent = g.name;
+      $('#gUtil').textContent = g.util + '%';
+      $('#gMem').textContent = (g.mem_used / 1024).toFixed(1) + ' GB';
+      $('#gTemp').textContent = g.temp + '°';
+    }
+    $('#apiKeyInfo').innerHTML = s.api_key
+      ? '✓ Comfy.org API key is set on the PC (needed for MiniMax / other API nodes).'
+      : 'ℹ No Comfy.org API key in config.json. Local models work; API nodes like MiniMax need <b>comfy_api_key</b>.';
+    const running = s.state === 'running';
+    $('#startBtn').classList.toggle('hide', s.state !== 'stopped');
+    $('#stopBtn2').classList.toggle('hide', s.state === 'stopped');
+    $('#startBtn3').disabled = s.state !== 'stopped';
+    $('#stopBtn3').disabled = $('#restartBtn').disabled = s.state === 'stopped';
+    $('#runBtn').disabled = !running || !wf;
+    if (running && prev !== 'running') onComfyUp();
+    if (!running) showFormMsg(s.state === 'starting' ? 'ComfyUI is starting… (models load on first run, this can take a minute)' : 'ComfyUI is stopped. Tap ▶ Start at the top.');
+  } catch (e) {
+    if (e.message !== 'Login required') { $('#dot').className = 'dot'; $('#pcState').textContent = 'PC not reachable'; $('#pcInfo').textContent = 'Is the PC on, launcher running, Tailscale connected?'; }
+  }
+}
+async function pcAction(a){
+  if (a === 'stop' && !confirm('Stop ComfyUI? Running jobs will be cancelled.')) return;
+  try { const r = await jpost('/api/' + a); toast('ComfyUI: ' + r.result); } catch (e) { toast(e.message, 5000); }
+  pollStatus();
+}
+$('#startBtn').onclick = $('#startBtn3').onclick = () => pcAction('start');
+$('#stopBtn2').onclick = $('#stopBtn3').onclick = () => pcAction('stop');
+$('#restartBtn').onclick = () => pcAction('restart');
+
+async function loadLog(){
+  try { const r = await api('/api/log?lines=300'); const pre = $('#log'); const atEnd = pre.scrollTop + pre.clientHeight >= pre.scrollHeight - 30;
+    pre.textContent = await r.text(); if (atEnd) pre.scrollTop = pre.scrollHeight; } catch {}
+}
+$('#logBtn').onclick = loadLog;
+
+// ---------------------------------------------------------------- workflows
+let wfNames = [], wfName = null, wf = null, specs = {}, fields = [], vals = {}, seedMode = {};
+
+async function loadWorkflowList(select){
+  wfNames = await jget('/api/workflows');
+  const want = select || store.get('cr:last');
+  renderChips();
+  const name = wfNames.includes(want) ? want : wfNames[0];
+  if (name) await selectWorkflow(name);
+  else showFormMsg('No workflows yet. In ComfyUI on the PC: Workflow → Export (API), save the file into comfy-remote\\workflows, or tap ＋ to import it here.');
+}
+function renderChips(){
+  $('#wfChips').innerHTML = wfNames.map(n => `<button data-wf="${esc(n)}" class="${n === wfName ? 'on' : ''}">${esc(n)}</button>`).join('')
+    || '<span class="mute">No workflows</span>';
+}
+$('#wfChips').onclick = e => { const b = e.target.closest('[data-wf]'); if (b) selectWorkflow(b.dataset.wf); };
+
+async function selectWorkflow(name){
+  const j = await jget('/api/workflows/' + encodeURIComponent(name));
+  store.set('cr:last', name);
+  $('#saveBox').classList.add('hide');
+  $('#delWfBtn').classList.remove('hide');
+  await setWorkflow(name, j);
+}
+async function setWorkflow(name, j){
+  wfName = name; wf = j;
+  vals = store.get('cr:v:' + name, {});
+  seedMode = store.get('cr:s:' + name, {});
+  renderChips();
+  $('#runBtn').disabled = pcState !== 'running';
+  if (pcState === 'running') await buildForm();
+}
+function isApi(j){
+  return j && typeof j === 'object' && !Array.isArray(j) && !j.nodes && Object.keys(j).length > 0 && Object.values(j).every(n => n && n.class_type);
+}
+
+$('#fileBtn').onclick = () => $('#fileIn').click();
+$('#fileIn').onchange = async e => {
+  const file = e.target.files[0]; e.target.value = ''; if (!file) return;
+  let j; try { j = JSON.parse(await file.text()); } catch { return toast('Not a valid JSON file'); }
+  if (!isApi(j)) return alert('This is a normal (UI) workflow.\nIn ComfyUI use: Workflow → Export (API) and import that file.');
+  const name = file.name.replace(/\.json$/i, '').replace(/[^\w .()-]/g, '_').slice(0, 80);
+  await setWorkflow(name, j);
+  $('#saveName').value = name; $('#saveBox').classList.remove('hide'); $('#delWfBtn').classList.add('hide');
+};
+$('#saveBtn').onclick = async () => {
+  const name = $('#saveName').value.trim();
+  try {
+    await jpost('/api/workflows/' + encodeURIComponent(name), wf);
+    store.set('cr:v:' + name, vals); store.set('cr:s:' + name, seedMode);
+    toast('Saved'); await loadWorkflowList(name);
+  } catch (e) { toast(e.message, 5000); }
+};
+$('#delWfBtn').onclick = async () => {
+  if (!wfName || !confirm(`Delete workflow "${wfName}" from the PC?`)) return;
+  await jpost('/api/workflows/' + encodeURIComponent(wfName), undefined, 'DELETE');
+  wfName = wf = null; $('#form').innerHTML = ''; store.set('cr:last', null);
+  loadWorkflowList();
+};
+
+// ---------------------------------------------------------------- form
+const MAIN_KEYS = /^(seed|noise_seed|steps|cfg|sampler_name|scheduler|guidance|denoise|width|height|length|duration|fps|frame_rate|batch_size|megapixels|shift|resolution|aspect_ratio|strength|upscale_by|prompt_optimizer)$/i;
+const MODEL_KEYS = /^(ckpt|unet|clip|clip_vision|vae|lora|control_net|style_model|upscale_model|model)(_name)?\d*$/i;
+
+function specOf(ct, key){
+  const s = specs[ct]; if (!s || !s.input) return null;
+  const raw = (s.input.required && s.input.required[key]) || (s.input.optional && s.input.optional[key]);
+  if (!raw) return null;
+  const [t, o = {}] = raw;
+  if (Array.isArray(t)) return { type: 'COMBO', options: t, o };
+  if (t === 'COMBO') return { type: 'COMBO', options: o.options || [], o };
+  return { type: t, o };
+}
+
+function classify(node, key, val, sp){
+  if (Array.isArray(val)) return null;                                     // wired to another node
+  const ct = node.class_type;
+  if (key === 'image' && ((sp && sp.o.image_upload) || /^LoadImage/.test(ct))) return 'image';
+  if (sp && sp.type === 'COMBO') return 'combo';
+  if (/seed/i.test(key) && typeof val === 'number') return 'seed';
+  if (typeof val === 'string' && ((sp && sp.o.multiline) || /TextEncode|Prompt/i.test(ct) || /^(text|prompt|positive|negative)/i.test(key))) return 'prompt';
+  if (typeof val === 'boolean') return 'bool';
+  if (typeof val === 'number') return 'num';
+  if (typeof val === 'string') return 'str';
+  return null;
+}
+
+function showFormMsg(msg){
+  const m = $('#formMsg');
+  if (msg) { m.textContent = msg; m.classList.remove('hide'); $('#form').classList.add('hide'); }
+  else { m.classList.add('hide'); $('#form').classList.remove('hide'); }
+}
+
+async function onComfyUp(){
+  specs = {};
+  if (wf) await buildForm();
+  loadQueue();
+}
+
+async function buildForm(){
+  showFormMsg('Loading workflow…');
+  const classes = [...new Set(Object.values(wf).map(n => n.class_type))].filter(c => !(c in specs));
+  await Promise.all(classes.map(async c => {
+    try { const j = await jget(C + '/object_info/' + encodeURIComponent(c)); specs[c] = j[c] || null; } catch { specs[c] = null; }
+  }));
+  const missing = Object.values(wf).map(n => n.class_type).filter(c => !specs[c]);
+  fields = [];
+  for (const [id, node] of Object.entries(wf)) {
+    const title = (node._meta && node._meta.title) || node.class_type;
+    for (const [key, val] of Object.entries(node.inputs || {})) {
+      const sp = specOf(node.class_type, key);
+      const kind = classify(node, key, val, sp);
+      if (kind) fields.push({ k: id + '|' + key, id, key, kind, title, orig: val, sp });
+    }
+  }
+  const pick = fn => fields.filter(f => !f.g && fn(f) && (f.g = true));
+  const groups = [
+    ['Images', pick(f => f.kind === 'image')],
+    ['Prompts', pick(f => f.kind === 'prompt')],
+    ['Settings', pick(f => MAIN_KEYS.test(f.key) || f.kind === 'seed')],
+    ['Models', pick(f => f.kind === 'combo' && MODEL_KEYS.test(f.key))],
+    ['Advanced', pick(() => true)],
+  ];
+  let html = missing.length ? `<div class="card err">⚠ ComfyUI doesn't know these nodes: ${esc([...new Set(missing)].join(', '))}. Install them on the PC (ComfyUI Manager) or this workflow will fail.</div>` : '';
+  for (const [name, list] of groups) {
+    if (!list.length) continue;
+    const inner = list.map(fieldHtml).join('');
+    html += name === 'Advanced' || name === 'Models'
+      ? `<div class="card"><details${name === 'Models' ? ' open' : ''}><summary>${name} (${list.length})</summary>${inner}</details></div>`
+      : `<div class="card"><h3>${name}</h3>${inner}</div>`;
+  }
+  $('#form').innerHTML = html || '<div class="card mute">This workflow has no editable inputs.</div>';
+  showFormMsg(null);
+  for (const f of fields) if (f.kind === 'image') showInputPreview(f);
+  $('#runBtn').disabled = pcState !== 'running';
+}
+
+const cur = f => (f.k in vals ? vals[f.k] : f.orig);
+
+function fieldHtml(f){
+  const v = cur(f), k = esc(f.k), o = (f.sp && f.sp.o) || {};
+  const nice = f.key.replace(/_/g, ' ');
+  const label = `<label class="f"><b>${esc(nice)}</b><span>${esc(f.title)}</span></label>`;
+  switch (f.kind) {
+    case 'image':
+      return label + `<div class="drop"><img data-prev="${k}" alt="" class="hide">
+        <div class="mute" data-name="${k}" style="word-break:break-all">${esc(v)}</div>
+        <div class="row" style="justify-content:center;margin-top:8px">
+          <button type="button" data-pick="${k}">📷 Choose / take photo</button>
+          <input type="file" accept="image/*" class="hide" data-up="${k}">
+        </div></div>`;
+    case 'prompt':
+      return label + `<textarea data-k="${k}" rows="4" placeholder="Describe what you want…">${esc(v)}</textarea>`;
+    case 'seed': {
+      const m = seedMode[f.k] || 'random';
+      return label + `<div class="seed"><input type="number" data-k="${k}" value="${esc(v)}" step="1" class="grow">
+        <button type="button" data-seed="${k}" data-mode="random" class="${m === 'random' ? 'on' : ''}" title="New random seed each run">🎲</button>
+        <button type="button" data-seed="${k}" data-mode="fixed" class="${m === 'fixed' ? 'on' : ''}" title="Keep this seed">📌</button></div>`;
+    }
+    case 'combo': {
+      const opts = f.sp.options.map(x => typeof x === 'object' ? (x.content ?? x.value ?? JSON.stringify(x)) : x);
+      const list = opts.includes(v) ? opts : [v, ...opts];
+      return label + `<select data-k="${k}">${list.map(x => `<option value="${esc(x)}"${x === v ? ' selected' : ''}>${esc(x)}${opts.includes(x) ? '' : ' ⚠ missing'}</option>`).join('')}</select>`;
+    }
+    case 'bool':
+      return label + `<label class="switch"><input type="checkbox" data-k="${k}"${v ? ' checked' : ''}> <span class="mute">${v ? 'on' : 'off'}</span></label>`;
+    case 'num': {
+      const isInt = f.sp ? f.sp.type === 'INT' : Number.isInteger(f.orig);
+      const step = o.step ?? o.round ?? (isInt ? 1 : 0.01);
+      const hasRange = o.min !== undefined && o.max !== undefined && o.max - o.min <= 100000 && o.max - o.min > 0;
+      const attrs = `step="${step}"${o.min !== undefined ? ` min="${o.min}"` : ''}${o.max !== undefined ? ` max="${o.max}"` : ''}`;
+      return label + (hasRange
+        ? `<div class="range"><input type="range" data-k="${k}" data-sync="1" value="${esc(v)}" ${attrs}><input type="number" data-k="${k}" data-sync="1" value="${esc(v)}" ${attrs}></div>`
+        : `<input type="number" data-k="${k}" value="${esc(v)}" ${attrs}>`);
+    }
+    default:
+      return label + `<input type="text" data-k="${k}" value="${esc(v)}">`;
+  }
+}
+
+function saveVals(){ if (wfName) { store.set('cr:v:' + wfName, vals); store.set('cr:s:' + wfName, seedMode); } }
+
+$('#form').addEventListener('input', e => {
+  const t = e.target, k = t.dataset.k; if (!k) return;
+  let v = t.type === 'checkbox' ? t.checked : (t.type === 'number' || t.type === 'range') ? Number(t.value) : t.value;
+  const f = fields.find(x => x.k === k);
+  if (f && f.kind === 'combo' && typeof f.orig === 'number') v = Number(v);
+  vals[k] = v;
+  if (t.dataset.sync) for (const el of $$(`[data-k="${CSS.escape(k)}"]`)) if (el !== t) el.value = t.value;
+  if (t.type === 'checkbox' && t.nextElementSibling) t.nextElementSibling.textContent = t.checked ? 'on' : 'off';
+  saveVals();
+});
+$('#form').addEventListener('click', e => {
+  const s = e.target.closest('[data-seed]');
+  if (s) { seedMode[s.dataset.seed] = s.dataset.mode; for (const b of $$(`[data-seed="${CSS.escape(s.dataset.seed)}"]`)) b.classList.toggle('on', b === s); saveVals(); }
+  const p = e.target.closest('[data-pick]');
+  if (p) p.nextElementSibling.click();
+});
+$('#form').addEventListener('change', async e => {
+  const k = e.target.dataset.up; if (!k || !e.target.files[0]) return;
+  const file = e.target.files[0]; e.target.value = '';
+  const nameEl = document.querySelector(`[data-name="${CSS.escape(k)}"]`);
+  nameEl.textContent = 'Uploading…';
+  try {
+    vals[k] = await upload(await shrink(file), file.name || 'phone.jpg');
+    saveVals(); nameEl.textContent = vals[k];
+    showInputPreview(fields.find(x => x.k === k));
+  } catch (err) { nameEl.innerHTML = `<span class="err">${esc(err.message)}</span>`; }
+});
+
+// Downscale huge phone photos (> 4096 px) before upload
+async function shrink(file){
+  try {
+    if (!/^image\/(jpeg|png|webp)$/.test(file.type)) return file;
+    const bmp = await createImageBitmap(file);
+    const max = 4096, sc = Math.min(1, max / Math.max(bmp.width, bmp.height));
+    if (sc === 1) return file;
+    const c = document.createElement('canvas'); c.width = Math.round(bmp.width * sc); c.height = Math.round(bmp.height * sc);
+    c.getContext('2d').drawImage(bmp, 0, 0, c.width, c.height);
+    return await new Promise(r => c.toBlob(b => r(b || file), 'image/jpeg', 0.92));
+  } catch { return file; }
+}
+
+async function upload(blob, name){
+  const fd = new FormData();
+  fd.append('image', blob, name);
+  fd.append('overwrite', 'true');
+  const r = await api(C + '/upload/image', { method: 'POST', body: fd });
+  if (!r.ok) throw new Error('Upload failed: ' + (await r.text()).slice(0, 200));
+  const j = await r.json();
+  return j.subfolder ? j.subfolder + '/' + j.name : j.name;
+}
+
+function viewUrl(name, type){
+  const i = name.lastIndexOf('/');
+  return C + '/view?' + new URLSearchParams({ filename: i < 0 ? name : name.slice(i + 1), subfolder: i < 0 ? '' : name.slice(0, i), type });
+}
+function showInputPreview(f){
+  const img = f && document.querySelector(`[data-prev="${CSS.escape(f.k)}"]`);
+  const v = f && cur(f);
+  if (!img || !v) return;
+  img.onload = () => img.classList.remove('hide');
+  img.onerror = () => img.classList.add('hide');
+  img.src = viewUrl(v, 'input') + '&t=' + Date.now();
+}
+
+$('#resetBtn').onclick = () => { if (!wf || !confirm('Reset all values to the workflow defaults?')) return; vals = {}; seedMode = {}; saveVals(); buildForm(); };
+
+// ---------------------------------------------------------------- run / jobs
+let jobs = store.get('cr:jobs', {});           // prompt_id -> {wf, t, done}
+let runningId = null;
+const saveJobs = () => {
+  const ids = Object.keys(jobs).sort((a, b) => jobs[b].t - jobs[a].t).slice(0, 30);
+  jobs = Object.fromEntries(ids.map(i => [i, jobs[i]])); store.set('cr:jobs', jobs);
+  const n = Object.values(jobs).filter(j => !j.done).length;
+  $('#jobBadge').textContent = n; $('#jobBadge').classList.toggle('hide', !n);
+};
+
+async function run(){
+  if (!wf || pcState !== 'running') return;
+  const n = Number($('#runCount').value) || 1;
+  $('#runBtn').disabled = true;
+  try {
+    for (let i = 0; i < n; i++) {
+      const p = clone(wf);
+      for (const f of fields) {
+        if (f.kind === 'seed' && (seedMode[f.k] || 'random') === 'random') {
+          vals[f.k] = Math.floor(Math.random() * 2 ** 48);
+          for (const el of $$(`[data-k="${CSS.escape(f.k)}"]`)) el.value = vals[f.k];
+        }
+        if (f.k in vals) p[f.id].inputs[f.key] = vals[f.k];
+      }
+      saveVals();
+      const j = await jpost(C + '/prompt', { prompt: p, client_id: clientId });
+      jobs[j.prompt_id] = { wf: wfName, t: Date.now(), done: false };
+      saveJobs();
+    }
+    toast(n > 1 ? `Queued ${n} runs` : 'Queued');
+    setStatus('Queued'); setProg(0);
+    showTab('result');
+  } catch (e) {
+    setStatus(formatError(e), true); showTab('result');
+  } finally {
+    $('#runBtn').disabled = pcState !== 'running';
+  }
+}
+$('#runBtn').onclick = run;
+
+function formatError(e){
+  const j = e.body || {};
+  let s = (j.error && (j.error.message || j.error)) || e.message || 'Error';
+  if (typeof s !== 'string') s = JSON.stringify(s);
+  for (const [id, ne] of Object.entries(j.node_errors || {})) {
+    const t = (wf && wf[id] && wf[id]._meta && wf[id]._meta.title) || ne.class_type || id;
+    for (const x of ne.errors || []) s += `\n• ${t}: ${x.message}${x.details ? ' (' + x.details + ')' : ''}`;
+  }
+  return s;
+}
+function setStatus(t, bad){ const s = $('#status'); s.textContent = t; s.className = bad ? 'err' : 'mute'; }
+function setProg(x){ const w = Math.round(Math.max(0, Math.min(1, x)) * 100) + '%'; $('#progBar').style.width = w; $('#progBar2').style.width = w; }
+
+async function finishJob(id){
+  const job = jobs[id]; if (!job || job.done) return;
+  job.done = true; saveJobs();
+  let item;
+  for (let i = 0; i < 20 && !item; i++) {           // history is written right after the "done" message
+    try { item = (await jget(C + '/history/' + id))[id]; } catch {}
+    if (!item) await sleep(500);
+  }
+  if (!item) { setStatus('Finished, but result not found in history', true); return; }
+  const st = item.status || {};
+  if (st.status_str === 'error') {
+    const m = (st.messages || []).find(x => x[0] === 'execution_error');
+    setStatus('Error' + (m ? ` in ${m[1].node_type}: ${m[1].exception_message}` : ''), true);
+    return;
+  }
+  const files = outputsOf(item);
+  if (runningId === id || !runningId) { setStatus(files.length ? `Done · ${files.length} file(s)` : 'Done (no outputs; add a Save Image / Save Video node)'); setProg(1); $('#live').classList.add('hide'); }
+  $('#results').insertAdjacentHTML('afterbegin', files.map(x => resultCard(x, job.wf)).join(''));
+  if (document.hidden && navigator.vibrate) navigator.vibrate(200);
+  loadQueue();
+}
+
+function outputsOf(item){
+  const files = [];
+  for (const out of Object.values(item.outputs || {}))
+    for (const arr of Object.values(out)) if (Array.isArray(arr))
+      for (const x of arr) if (x && x.filename) files.push(x);
+  const saved = files.filter(x => x.type === 'output');
+  return saved.length ? saved : files;
+}
+const fileUrl = x => C + '/view?' + new URLSearchParams({ filename: x.filename, subfolder: x.subfolder || '', type: x.type || 'output' });
+const isVideo = n => /\.(mp4|webm|mov|mkv)$/i.test(n);
+const mediaHtml = (u, n, attrs = 'controls playsinline loop') => isVideo(n) ? `<video src="${u}" ${attrs}></video>` : `<img src="${u}" alt="" loading="lazy">`;
+
+function resultCard(x, from){
+  const u = fileUrl(x);
+  return `<div class="card media">${mediaHtml(u, x.filename)}
+    <div class="row mute" style="margin-top:6px"><span class="grow">${esc(from || '')}</span><span>${esc(x.filename)}</span></div>
+    <div class="acts"><a href="${u}" download="${esc(x.filename)}"><button style="width:100%">⬇ Save</button></a>
+    ${isVideo(x.filename) ? '' : `<button data-reuse="${esc(u)}" data-fn="${esc(x.filename)}">↺ Use as input</button>`}</div></div>`;
+}
+
+async function reuse(url, fn){
+  const f = fields.find(x => x.kind === 'image');
+  if (!f) return toast('This workflow has no image input');
+  toast('Sending to input…');
+  const blob = await (await api(url)).blob();
+  vals[f.k] = await upload(blob, fn);
+  saveVals(); await buildForm(); showTab('create'); closeViewer();
+  toast('Image set as input');
+}
+document.addEventListener('click', e => {
+  const b = e.target.closest('[data-reuse]');
+  if (b) reuse(b.dataset.reuse, b.dataset.fn).catch(err => toast(err.message, 5000));
+});
+
+$('#interruptBtn').onclick = async () => { await jpost(C + '/interrupt').catch(() => {}); toast('Stopping current job'); };
+$('#clearQBtn').onclick = async () => { await jpost(C + '/queue', { clear: true }).catch(() => {}); loadQueue(); };
+
+async function loadQueue(){
+  if (pcState !== 'running') return;
+  try {
+    const q = await jget(C + '/queue');
+    const row = (it, running) => {
+      const id = it[1], j = jobs[id];
+      return `<div class="job"><span class="grow">${running ? '▶' : '⏳'} ${esc(j ? j.wf : 'other client')} <span class="mute">${esc(id.slice(0, 8))}</span></span>
+        ${running ? '' : `<button data-cancel="${esc(id)}">✕</button>`}</div>`;
+    };
+    const html = [...q.queue_running.map(x => row(x, true)), ...q.queue_pending.sort((a, b) => a[0] - b[0]).map(x => row(x, false))].join('');
+    $('#queueList').innerHTML = html || 'Empty';
+    // recover results that finished while the phone was asleep
+    const live = new Set([...q.queue_running, ...q.queue_pending].map(x => x[1]));
+    for (const id of Object.keys(jobs)) if (!jobs[id].done && !live.has(id)) finishJob(id);
+  } catch {}
+}
+$('#queueList').onclick = async e => {
+  const b = e.target.closest('[data-cancel]'); if (!b) return;
+  await jpost(C + '/queue', { delete: [b.dataset.cancel] }).catch(() => {});
+  if (jobs[b.dataset.cancel]) { jobs[b.dataset.cancel].done = true; saveJobs(); }
+  loadQueue();
+};
+
+// ---------------------------------------------------------------- websocket
+let ws = null;
+function connect(){
+  if (ws && ws.readyState <= 1) return;
+  ws = new WebSocket((location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host + C + '/ws?clientId=' + encodeURIComponent(clientId));
+  ws.binaryType = 'arraybuffer';
+  ws.onopen = () => loadQueue();
+  ws.onmessage = e => {
+    if (typeof e.data !== 'string') return onBinary(e.data);
+    let m; try { m = JSON.parse(e.data); } catch { return; }
+    const d = m.data || {};
+    switch (m.type) {
+      case 'status': loadQueue(); break;
+      case 'execution_start': if (jobs[d.prompt_id]) { runningId = d.prompt_id; setStatus(`Running · ${jobs[d.prompt_id].wf}`); setProg(0); } break;
+      case 'progress': if (d.max && (!d.prompt_id || d.prompt_id === runningId)) setProg(d.value / d.max); break;
+      case 'progress_state': break;
+      case 'executing':
+        if (!jobs[d.prompt_id]) break;
+        if (d.node === null) finishJob(d.prompt_id);
+        else { const n = wf && wf[d.node]; setStatus('Running · ' + ((n && n._meta && n._meta.title) || (n && n.class_type) || 'node ' + d.node)); }
+        break;
+      case 'execution_success': if (jobs[d.prompt_id]) finishJob(d.prompt_id); break;
+      case 'execution_error':
+        if (jobs[d.prompt_id]) { jobs[d.prompt_id].done = true; saveJobs(); setStatus(`Error in ${d.node_type || d.node_id}: ${d.exception_message}`, true); loadQueue(); }
+        break;
+      case 'execution_interrupted':
+        if (jobs[d.prompt_id]) { jobs[d.prompt_id].done = true; saveJobs(); setStatus('Stopped', true); setProg(0); loadQueue(); }
+        break;
+    }
+  };
+  ws.onclose = () => { ws = null; setTimeout(connect, 2500); };
+}
+
+function onBinary(buf){
+  if (buf.byteLength < 8) return;
+  const v = new DataView(buf), type = v.getUint32(0);
+  if (type === 1) {                                       // live preview image
+    const img = $('#live');
+    if (img.src.startsWith('blob:')) URL.revokeObjectURL(img.src);
+    img.src = URL.createObjectURL(new Blob([buf.slice(8)], { type: v.getUint32(4) === 2 ? 'image/png' : 'image/jpeg' }));
+    img.classList.remove('hide');
+  } else if (type === 3) {                                // text progress (API nodes such as MiniMax)
+    const len = v.getUint32(4);
+    const text = new TextDecoder().decode(buf.slice(8 + len)).trim();
+    if (text) setStatus(text.split('\n').slice(-2).join(' · '));
+  }
+}
+
+// ---------------------------------------------------------------- gallery / viewer
+let galItems = [];
+async function loadGallery(){
+  if (pcState !== 'running') { $('#gal').innerHTML = '<div class="mute">Start ComfyUI to see outputs</div>'; return; }
+  const h = await jget(C + '/history?max_items=80');
+  galItems = [];
+  for (const item of Object.values(h).reverse()) for (const x of outputsOf(item)) if (x.type === 'output') galItems.push(x);
+  $('#gal').innerHTML = galItems.length ? galItems.map((x, i) => `<div class="it" data-gi="${i}">${
+    isVideo(x.filename) ? `<video src="${fileUrl(x)}#t=0.1" preload="metadata" muted playsinline></video><span class="play">▶</span>` : `<img src="${fileUrl(x)}" loading="lazy" alt="">`}</div>`).join('')
+    : '<div class="mute">No outputs yet</div>';
+}
+$('#galRefresh').onclick = loadGallery;
+$('#gal').onclick = e => { const it = e.target.closest('[data-gi]'); if (it) openViewer(galItems[+it.dataset.gi]); };
+function openViewer(x){
+  const u = fileUrl(x);
+  $('#vName').textContent = x.filename;
+  $('#vMedia').innerHTML = mediaHtml(u, x.filename, 'controls autoplay playsinline loop');
+  $('#vSave').href = u; $('#vSave').download = x.filename;
+  const r = $('#vReuse'); r.dataset.reuse = u; r.dataset.fn = x.filename; r.classList.toggle('hide', isVideo(x.filename));
+  $('#viewer').classList.remove('hide');
+}
+function closeViewer(){ $('#viewer').classList.add('hide'); $('#vMedia').innerHTML = ''; }
+$('#vClose').onclick = closeViewer;
+
+// ---------------------------------------------------------------- tabs / boot
+let tab = 'create';
+function showTab(t){
+  tab = t;
+  for (const b of $$('.tabs button')) b.classList.toggle('on', b.dataset.tab === t);
+  for (const s of ['create', 'result', 'gallery', 'pc']) $('#tab-' + s).classList.toggle('hide', s !== t);
+  if (t === 'gallery') loadGallery().catch(() => {});
+  if (t === 'pc') loadLog();
+  if (t === 'result') loadQueue();
+}
+for (const b of $$('.tabs button')) b.onclick = () => showTab(b.dataset.tab);
+
+let timers = [];
+async function boot(){
+  timers.forEach(clearInterval);
+  await pollStatus();
+  try { await loadWorkflowList(); } catch {}
+  connect();
+  saveJobs();
+  timers = [
+    setInterval(() => { if (!document.hidden) pollStatus(); }, 3000),
+    setInterval(() => { if (!document.hidden && tab === 'pc' && $('#logAuto').checked) loadLog(); }, 4000),
+  ];
+}
+document.addEventListener('visibilitychange', () => { if (!document.hidden) { pollStatus(); connect(); loadQueue(); } });
+boot();
+</script>
+</body>
+</html>

@@ -1,3 +1,0 @@
-{"3":{"class_type":"KSampler","inputs":{"seed":1,"steps":4,"cfg":1.0,"denoise":1.0,"model":["4",0],"sampler_name":"euler"},"_meta":{"title":"KSampler"}},
- "5":{"class_type":"LoadImage","inputs":{"image":"a.png"},"_meta":{"title":"Load Image"}},
- "6":{"class_type":"TextEncodeQwenImageEdit","inputs":{"prompt":"old","clip":["4",1]},"_meta":{"title":"Prompt"}}}

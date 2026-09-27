@@ -1,0 +1,9 @@
+{
+  "port": 8190,
+  "comfy_dir": "C:\\ComfyUI",
+  "comfy_python": "",
+  "comfy_port": 8188,
+  "comfy_args": ["--preview-method", "auto"],
+  "pin": "",
+  "comfy_api_key": ""
+}
