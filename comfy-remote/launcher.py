@@ -278,7 +278,7 @@ def _is_api_workflow(data):
 
 
 async def wf_list(request):
-    return web.json_response(sorted(p.stem for p in WF_DIR.glob("*.json")))
+    return web.json_response(sorted(p.stem for p in WF_DIR.glob("*.json") if not p.stem.endswith(".ui")))
 
 
 async def wf_get(request):
@@ -286,6 +286,12 @@ async def wf_get(request):
     if not p.exists():
         raise web.HTTPNotFound()
     return web.FileResponse(p)
+
+
+async def wf_ui(request):
+    """Optional <name>.ui.json: curated labels/groups for the phone form."""
+    p = _wf_path(request.match_info["name"] + ".ui")
+    return web.FileResponse(p) if p.exists() else web.json_response({})
 
 
 async def wf_save(request):
@@ -298,9 +304,9 @@ async def wf_save(request):
 
 
 async def wf_delete(request):
-    p = _wf_path(request.match_info["name"])
-    if p.exists():
-        p.unlink()
+    for p in (_wf_path(request.match_info["name"]), _wf_path(request.match_info["name"] + ".ui")):
+        if p.exists():
+            p.unlink()
     return web.json_response({"ok": True})
 
 
@@ -390,6 +396,7 @@ def make_app():
         web.get("/api/log", log_tail),
         web.get("/api/workflows", wf_list),
         web.get("/api/workflows/{name}", wf_get),
+        web.get("/api/workflows/{name}/ui", wf_ui),
         web.post("/api/workflows/{name}", wf_save),
         web.delete("/api/workflows/{name}", wf_delete),
         web.route("*", "/comfy/{tail:.*}", proxy),

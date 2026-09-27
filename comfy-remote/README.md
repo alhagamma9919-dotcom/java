@@ -32,6 +32,15 @@ text boxes, seed gets 🎲 random / 📌 fixed, numbers get sliders with the nod
 and dropdowns show the real choices (samplers, schedulers, model files, MiniMax model, …).
 Rename nodes in ComfyUI (e.g. "Positive", "Negative") to get clearer labels.
 
+### Curated layouts (`<workflow>.ui.json`)
+Optional file next to a workflow that gives it a clean form: friendly labels, groups, help text,
+slider ranges, one field writing to several nodes, and hidden clutter. Everything not listed
+stays under **Advanced**. Included: `Qwen Image 2.1 Edit` and `MiniMax H3 Image to Video`.
+```json
+{"note": "…", "fields": [{"t": [["470", "image"]], "label": "Photo 1", "group": "Photos"}], "hide": [["472"]]}
+```
+If you re-export a workflow and node IDs change, update its `.ui.json` (or delete it to get the automatic form).
+
 ### MiniMax / other API nodes
 These run on Comfy.org's servers and cost credits. Create an API key at platform.comfy.org and
 put it in `config.json` as `"comfy_api_key"`. The key stays on the PC and is never sent to the phone.

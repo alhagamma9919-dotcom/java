@@ -310,7 +310,7 @@ async function loadLog(){
 $('#logBtn').onclick = loadLog;
 
 // ---------------------------------------------------------------- workflows
-let wfNames = [], wfName = null, wf = null, specs = {}, fields = [], vals = {}, seedMode = {};
+let ui = {}, wfNames = [], wfName = null, wf = null, specs = {}, fields = [], vals = {}, seedMode = {};
 
 async function loadWorkflowList(select){
   wfNames = await jget('/api/workflows');
@@ -327,14 +327,15 @@ function renderChips(){
 $('#wfChips').onclick = e => { const b = e.target.closest('[data-wf]'); if (b) selectWorkflow(b.dataset.wf); };
 
 async function selectWorkflow(name){
-  const j = await jget('/api/workflows/' + encodeURIComponent(name));
+  const base = '/api/workflows/' + encodeURIComponent(name);
+  const [j, u] = await Promise.all([jget(base), jget(base + '/ui').catch(() => ({}))]);
   store.set('cr:last', name);
   $('#saveBox').classList.add('hide');
   $('#delWfBtn').classList.remove('hide');
-  await setWorkflow(name, j);
+  await setWorkflow(name, j, u);
 }
-async function setWorkflow(name, j){
-  wfName = name; wf = j;
+async function setWorkflow(name, j, u = {}){
+  wfName = name; wf = j; ui = u || {};
   vals = store.get('cr:v:' + name, {});
   seedMode = store.get('cr:s:' + name, {});
   renderChips();
@@ -415,28 +416,51 @@ async function buildForm(){
     try { const j = await jget(C + '/object_info/' + encodeURIComponent(c)); specs[c] = j[c] || null; } catch { specs[c] = null; }
   }));
   const missing = Object.values(wf).map(n => n.class_type).filter(c => !specs[c]);
+  const titleOf = id => (wf[id]._meta && wf[id]._meta.title) || wf[id].class_type;
+  const hidden = new Set((ui.hide || []).map(h => h.join('|')));
+  const taken = new Set();
   fields = [];
+  for (const h of ui.fields || []) {                    // curated fields from <workflow>.ui.json
+    const t = (h.t || []).filter(([id, key]) => wf[id] && wf[id].inputs && key in wf[id].inputs && !Array.isArray(wf[id].inputs[key]));
+    if (!t.length) continue;
+    const [id, key] = t[0], node = wf[id], val = node.inputs[key], sp = specOf(node.class_type, key);
+    const kind = h.kind || classify(node, key, val, sp);
+    if (!kind) continue;
+    for (const [i, k] of t) taken.add(i + '|' + k);
+    fields.push({ k: id + '|' + key, targets: t, id, key, kind, title: titleOf(id), label: h.label, help: h.help,
+      group: h.group || 'Settings', orig: val, sp, lim: { min: h.min, max: h.max, step: h.step } });
+  }
+  const curated = fields.length > 0;
   for (const [id, node] of Object.entries(wf)) {
-    const title = (node._meta && node._meta.title) || node.class_type;
+    if (hidden.has(id)) continue;
     for (const [key, val] of Object.entries(node.inputs || {})) {
+      const k = id + '|' + key;
+      if (taken.has(k) || hidden.has(k)) continue;
       const sp = specOf(node.class_type, key);
       const kind = classify(node, key, val, sp);
-      if (kind) fields.push({ k: id + '|' + key, id, key, kind, title, orig: val, sp });
+      if (kind) fields.push({ k, targets: [[id, key]], id, key, kind, title: titleOf(id), orig: val, sp, auto: true });
     }
   }
-  const pick = fn => fields.filter(f => !f.g && fn(f) && (f.g = true));
-  const groups = [
-    ['Images', pick(f => f.kind === 'image')],
-    ['Prompts', pick(f => f.kind === 'prompt')],
-    ['Settings', pick(f => MAIN_KEYS.test(f.key) || f.kind === 'seed')],
-    ['Models', pick(f => f.kind === 'combo' && MODEL_KEYS.test(f.key))],
-    ['Advanced', pick(() => true)],
-  ];
-  let html = missing.length ? `<div class="card err">⚠ ComfyUI doesn't know these nodes: ${esc([...new Set(missing)].join(', '))}. Install them on the PC (ComfyUI Manager) or this workflow will fail.</div>` : '';
+  let groups;
+  if (curated) {
+    const order = [...new Set(fields.filter(f => !f.auto).map(f => f.group))];
+    groups = [...order.map(g => [g, fields.filter(f => !f.auto && f.group === g)]), ['Advanced', fields.filter(f => f.auto)]];
+  } else {
+    const pick = fn => fields.filter(f => !f.g && fn(f) && (f.g = true));
+    groups = [
+      ['Images', pick(f => f.kind === 'image')],
+      ['Prompts', pick(f => f.kind === 'prompt')],
+      ['Settings', pick(f => MAIN_KEYS.test(f.key) || f.kind === 'seed')],
+      ['Models', pick(f => f.kind === 'combo' && MODEL_KEYS.test(f.key))],
+      ['Advanced', pick(() => true)],
+    ];
+  }
+  let html = ui.note ? `<div class="card mute">ℹ ${esc(ui.note)}</div>` : '';
+  html += missing.length ? `<div class="card err">⚠ ComfyUI doesn't know these nodes: ${esc([...new Set(missing)].join(', '))}. Install them on the PC (ComfyUI Manager) or this workflow will fail.</div>` : '';
   for (const [name, list] of groups) {
     if (!list.length) continue;
     const inner = list.map(fieldHtml).join('');
-    html += name === 'Advanced' || name === 'Models'
+    html += name === 'Advanced' || (name === 'Models' && !curated)
       ? `<div class="card"><details${name === 'Models' ? ' open' : ''}><summary>${name} (${list.length})</summary>${inner}</details></div>`
       : `<div class="card"><h3>${name}</h3>${inner}</div>`;
   }
@@ -449,9 +473,12 @@ async function buildForm(){
 const cur = f => (f.k in vals ? vals[f.k] : f.orig);
 
 function fieldHtml(f){
-  const v = cur(f), k = esc(f.k), o = (f.sp && f.sp.o) || {};
-  const nice = f.key.replace(/_/g, ' ');
-  const label = `<label class="f"><b>${esc(nice)}</b><span>${esc(f.title)}</span></label>`;
+  const v = cur(f), k = esc(f.k);
+  const o = { ...((f.sp && f.sp.o) || {}) };
+  for (const [a, b] of Object.entries(f.lim || {})) if (b !== undefined) o[a] = b;
+  const nice = f.label || f.key.replace(/_/g, ' ');
+  const label = `<label class="f"><b>${esc(nice)}</b><span>${f.label ? '' : esc(f.title)}</span></label>` +
+    (f.help ? `<div class="mute" style="margin:-2px 0 6px">${esc(f.help)}</div>` : '');
   switch (f.kind) {
     case 'image':
       return label + `<div class="drop"><img data-prev="${k}" alt="" class="hide">
@@ -579,7 +606,7 @@ async function run(){
           vals[f.k] = Math.floor(Math.random() * 2 ** 48);
           for (const el of $$(`[data-k="${CSS.escape(f.k)}"]`)) el.value = vals[f.k];
         }
-        if (f.k in vals) p[f.id].inputs[f.key] = vals[f.k];
+        if (f.k in vals) for (const [i, k] of f.targets) p[i].inputs[k] = vals[f.k];
       }
       saveVals();
       const j = await jpost(C + '/prompt', { prompt: p, client_id: clientId });
@@ -627,7 +654,10 @@ async function finishJob(id){
   }
   const files = outputsOf(item);
   if (runningId === id || !runningId) { setStatus(files.length ? `Done · ${files.length} file(s)` : 'Done (no outputs; add a Save Image / Save Video node)'); setProg(1); $('#live').classList.add('hide'); }
-  $('#results').insertAdjacentHTML('afterbegin', files.map(x => resultCard(x, job.wf)).join(''));
+  const texts = [];
+  for (const out of Object.values(item.outputs || {})) if (Array.isArray(out.text)) texts.push(...out.text.filter(t => typeof t === 'string' && t.length > 30));
+  $('#results').insertAdjacentHTML('afterbegin', files.map(x => resultCard(x, job.wf)).join('') +
+    texts.map(t => `<div class="card"><details><summary>Text output</summary><pre>${esc(t)}</pre></details></div>`).join(''));
   if (document.hidden && navigator.vibrate) navigator.vibrate(200);
   loadQueue();
 }
