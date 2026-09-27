@@ -484,6 +484,7 @@ async function buildForm(){
   }
   let html = ui.note ? `<div class="card mute">ℹ ${esc(ui.note)}</div>` : '';
   if (S) html += '<div class="card" id="slotCard"></div>';
+  if (ui.inputScale) html += '<div class="card" id="scaleCard"></div>';
   html += missing.length ? `<div class="card err">⚠ ComfyUI doesn't know these nodes: ${esc([...new Set(missing)].join(', '))}. Install them on the PC (ComfyUI Manager) or this workflow will fail.</div>` : '';
   for (const [name, list] of groups) {
     if (!list.length) continue;
@@ -496,6 +497,7 @@ async function buildForm(){
   showFormMsg(null);
   for (const f of fields) if (f.kind === 'image') showInputPreview(f);
   if (S) renderSlots();
+  if (ui.inputScale) renderScale();
   $('#runBtn').disabled = pcState !== 'running';
   updateQuick();
 }
@@ -557,6 +559,39 @@ $('#slotFile').onchange = async e => {
     const list = [...slotList()]; list[slotTarget] = name; setSlots(list.filter(Boolean)); toast('Photo added');
   } catch (err) { toast(err.message, 5000); }
 };
+// ---------------------------------------------------------------- input size (ui.inputScale)
+const SCALE_KEY = '@scale';
+const SCALE_INFO = {
+  1: 'Full size. Best quality.',
+  0.75: '75% width/height (~56% of the pixels). About 1.5–2× faster, small quality loss. Good everyday choice.',
+  0.5: '50% width/height (25% of the pixels). About 3–4× faster; output is half the size, e.g. 1024 → 512. Good for quick tests.',
+  0.25: '25% width/height (6% of the pixels). Very fast previews only; output is small and soft.',
+};
+function renderScale(){
+  const box = $('#scaleCard'); if (!box) return;
+  const s = Number(vals[SCALE_KEY] || 1);
+  box.innerHTML = `<h3>Input size</h3>
+    <div class="chips" style="margin-top:6px">${[1, 0.75, 0.5, 0.25].map(x =>
+      `<button type="button" data-scale="${x}" class="${x === s ? 'on' : ''}">${x * 100}%</button>`).join('')}</div>
+    <div class="mute" style="margin-top:8px">${esc(SCALE_INFO[s])}</div>`;
+}
+$('#form').addEventListener('click', e => {
+  const b = e.target.closest('[data-scale]'); if (!b) return;
+  vals[SCALE_KEY] = Number(b.dataset.scale); saveVals(); renderScale();
+});
+// Put an ImageScaleBy node after every photo loader
+function applyScale(p){
+  const s = Number(vals[SCALE_KEY] || 1);
+  if (!ui.inputScale || s >= 1) return;
+  for (const id of Object.keys(p).filter(i => p[i].class_type === 'LoadImage')) {
+    const sid = id + '_scaled';
+    for (const n of Object.values(p))
+      for (const [k, v] of Object.entries(n.inputs || {}))
+        if (Array.isArray(v) && v[0] === id && v[1] === 0) n.inputs[k] = [sid, 0];
+    p[sid] = { class_type: 'ImageScaleBy', inputs: { image: [id, 0], upscale_method: 'area', scale_by: s }, _meta: { title: 'Input size ' + s * 100 + '%' } };
+  }
+}
+
 // Rewire the prompt for the chosen number of photos
 function applySlots(p){
   const S = ui.imageSlots; if (!S) return;
@@ -718,6 +753,7 @@ async function run(){
         if (f.k in vals) for (const [i, k] of f.targets) p[i].inputs[k] = vals[f.k];
       }
       applySlots(p);
+      applyScale(p);
       saveVals();
       const j = await jpost(C + '/prompt', { prompt: p, client_id: clientId });
       jobs[j.prompt_id] = { wf: wfName, t: Date.now(), done: false };
