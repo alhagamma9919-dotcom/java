@@ -130,5 +130,11 @@
       "105:91",
       "fps"
     ]
-  ]
+  ],
+  "inputScale": {
+    "megapixels": [
+      "115",
+      "megapixels"
+    ]
+  }
 }

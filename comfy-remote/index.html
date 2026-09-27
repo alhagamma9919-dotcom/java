@@ -489,9 +489,9 @@ async function buildForm(){
   for (const [name, list] of groups) {
     if (!list.length) continue;
     const inner = list.map(fieldHtml).join('');
-    html += name === 'Advanced' || (name === 'Models' && !curated)
-      ? `<div class="card"><details${name === 'Models' ? ' open' : ''}><summary>${name} (${list.length})</summary>${inner}</details></div>`
-      : `<div class="card"><h3>${name}</h3>${inner}</div>`;
+    const closedByDefault = name === 'Advanced' || (name === 'Models' && curated);
+    const open = folded[name] === undefined ? !closedByDefault : !folded[name];
+    html += `<div class="card"><details data-grp="${esc(name)}"${open ? ' open' : ''}><summary>${esc(name)} (${list.length})</summary>${inner}</details></div>`;
   }
   $('#form').innerHTML = html || '<div class="card mute">This workflow has no editable inputs.</div>';
   showFormMsg(null);
@@ -567,13 +567,26 @@ const SCALE_INFO = {
   0.5: '50% width/height (25% of the pixels). About 3–4× faster; output is half the size, e.g. 1024 → 512. Good for quick tests.',
   0.25: '25% width/height (6% of the pixels). Very fast previews only; output is small and soft.',
 };
+const SCALE_INFO_VIDEO = {
+  1: 'Full resolution from the Resolution setting. Best quality.',
+  0.75: '75% width/height (~56% of the pixels). About 1.5–2× faster, small quality loss.',
+  0.5: '50% width/height (25% of the pixels). About 3–4× faster; video is half the size. Good for testing motion/prompt.',
+  0.25: '25% width/height. Tiny, very fast previews only.',
+};
+const mpTarget = () => ui.inputScale && ui.inputScale.megapixels;
 function renderScale(){
   const box = $('#scaleCard'); if (!box) return;
-  const s = Number(vals[SCALE_KEY] || 1);
-  box.innerHTML = `<h3>Input size</h3>
+  const s = Number(vals[SCALE_KEY] || 1), mp = mpTarget();
+  let info = esc((mp ? SCALE_INFO_VIDEO : SCALE_INFO)[s]);
+  if (mp && s < 1) {
+    const f = fields.find(x => x.id === mp[0] && x.key === mp[1]);
+    const base = Number(f ? cur(f) : (wf[mp[0]] && wf[mp[0]].inputs[mp[1]]));
+    if (base) { const r = Math.max(0.05, Math.round(base * s * s * 100) / 100); info += ` → ${base} MP becomes ${r} MP (≈${Math.round(Math.sqrt(r * 1e6) / 8) * 8}×${Math.round(Math.sqrt(r * 1e6) / 8) * 8} for 1:1).`; }
+  }
+  box.innerHTML = `<h3>${mp ? 'Speed / resolution' : 'Input size'}</h3>
     <div class="chips" style="margin-top:6px">${[1, 0.75, 0.5, 0.25].map(x =>
       `<button type="button" data-scale="${x}" class="${x === s ? 'on' : ''}">${x * 100}%</button>`).join('')}</div>
-    <div class="mute" style="margin-top:8px">${esc(SCALE_INFO[s])}</div>`;
+    <div class="mute" style="margin-top:8px">${info}</div>`;
 }
 $('#form').addEventListener('click', e => {
   const b = e.target.closest('[data-scale]'); if (!b) return;
@@ -583,6 +596,12 @@ $('#form').addEventListener('click', e => {
 function applyScale(p){
   const s = Number(vals[SCALE_KEY] || 1);
   if (!ui.inputScale || s >= 1) return;
+  const mp = mpTarget();
+  if (mp) {                                          // video: scale the output megapixels instead of the photo
+    if (p[mp[0]] && typeof p[mp[0]].inputs[mp[1]] === 'number')
+      p[mp[0]].inputs[mp[1]] = Math.max(0.05, Math.round(p[mp[0]].inputs[mp[1]] * s * s * 100) / 100);
+    return;
+  }
   for (const id of Object.keys(p).filter(i => p[i].class_type === 'LoadImage')) {
     const sid = id + '_scaled';
     for (const n of Object.values(p))
@@ -615,6 +634,11 @@ function applySlots(p){
 }
 
 const cur = f => (f.k in vals ? vals[f.k] : f.orig);
+const folded = store.get('cr:folded', {});             // section name -> collapsed?
+$('#form').addEventListener('toggle', e => {
+  const d = e.target; if (!d.dataset || !d.dataset.grp) return;
+  folded[d.dataset.grp] = !d.open; store.set('cr:folded', folded);
+}, true);
 
 function fieldHtml(f){
   const v = cur(f), k = esc(f.k);
@@ -671,6 +695,7 @@ $('#form').addEventListener('input', e => {
   if (t.dataset.sync) for (const el of $$(`[data-k="${CSS.escape(k)}"]`)) if (el !== t) el.value = t.value;
   if (t.type === 'checkbox' && t.nextElementSibling) t.nextElementSibling.textContent = t.checked ? 'on' : 'off';
   saveVals();
+  if (mpTarget()) renderScale();
 });
 $('#form').addEventListener('click', e => {
   const s = e.target.closest('[data-seed]');
