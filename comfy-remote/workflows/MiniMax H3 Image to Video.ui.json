@@ -1,15 +1,167 @@
 {
   "note": "Image → video with sound, on your GPU. The start frame is the first frame of the video. Describe shots, camera moves and audio.",
   "fields": [
-    {"t": [["114", "image"]], "label": "Start frame", "group": "Image"},
-    {"t": [["105:104", "prompt"]], "label": "Video prompt (shots, camera, audio)", "kind": "prompt", "group": "Prompt"},
-    {"t": [["105:111", "value"]], "label": "Duration (seconds)", "min": 1, "max": 10, "step": 1, "group": "Video"},
-    {"t": [["115", "aspect_ratio"]], "label": "Aspect ratio", "group": "Video"},
-    {"t": [["115", "megapixels"]], "label": "Resolution (megapixels)", "help": "0.4 ≈ 640×640. Higher = sharper but slower and more VRAM.", "min": 0.2, "max": 2, "step": 0.1, "group": "Video"},
-    {"t": [["105:126", "value"]], "label": "⚡ Fast mode (Lightning LoRA)", "help": "~2–3× faster, slightly lower quality", "group": "Quality"},
-    {"t": [["105:124", "value"]], "label": "Steps (normal mode)", "min": 1, "max": 60, "step": 1, "group": "Quality"},
-    {"t": [["105:125", "value"]], "label": "Steps (fast mode)", "min": 1, "max": 20, "step": 1, "group": "Quality"},
-    {"t": [["105:15", "noise_seed"]], "label": "Seed", "group": "Quality"}
+    {
+      "t": [
+        [
+          "114",
+          "image"
+        ]
+      ],
+      "label": "Start frame",
+      "group": "Image"
+    },
+    {
+      "t": [
+        [
+          "105:104",
+          "prompt"
+        ]
+      ],
+      "label": "Video prompt (shots, camera, audio)",
+      "kind": "prompt",
+      "group": "Prompt"
+    },
+    {
+      "t": [
+        [
+          "105:111",
+          "value"
+        ]
+      ],
+      "label": "Duration (seconds)",
+      "min": 1,
+      "max": 10,
+      "step": 1,
+      "group": "Video"
+    },
+    {
+      "t": [
+        [
+          "115",
+          "aspect_ratio"
+        ]
+      ],
+      "label": "Aspect ratio",
+      "group": "Video"
+    },
+    {
+      "t": [
+        [
+          "115",
+          "megapixels"
+        ]
+      ],
+      "label": "Resolution (megapixels)",
+      "help": "0.4 ≈ 640×640. Higher = sharper but slower and more VRAM.",
+      "min": 0.2,
+      "max": 2,
+      "step": 0.1,
+      "group": "Video"
+    },
+    {
+      "t": [
+        [
+          "105:126",
+          "value"
+        ]
+      ],
+      "label": "⚡ Fast mode (Lightning LoRA)",
+      "help": "~2–3× faster, slightly lower quality",
+      "group": "Quality"
+    },
+    {
+      "t": [
+        [
+          "105:124",
+          "value"
+        ]
+      ],
+      "label": "Steps (normal mode)",
+      "min": 1,
+      "max": 60,
+      "step": 1,
+      "group": "Quality"
+    },
+    {
+      "t": [
+        [
+          "105:125",
+          "value"
+        ]
+      ],
+      "label": "Steps (fast mode)",
+      "min": 1,
+      "max": 20,
+      "step": 1,
+      "group": "Quality"
+    },
+    {
+      "t": [
+        [
+          "105:15",
+          "noise_seed"
+        ]
+      ],
+      "label": "Seed",
+      "group": "Quality"
+    },
+    {
+      "t": [
+        [
+          "105:6",
+          "unet_name"
+        ]
+      ],
+      "label": "Video model",
+      "help": "int8 = smaller/faster · fp16/bf16 = full quality, needs more VRAM",
+      "group": "Models"
+    },
+    {
+      "t": [
+        [
+          "105:6",
+          "weight_dtype"
+        ]
+      ],
+      "label": "Load as",
+      "help": "fp8 = load a full model at half the VRAM",
+      "group": "Models"
+    },
+    {
+      "t": [
+        [
+          "105:13",
+          "clip_name"
+        ]
+      ],
+      "label": "Text encoder",
+      "group": "Models"
+    },
+    {
+      "t": [
+        [
+          "105:121",
+          "lora_name"
+        ]
+      ],
+      "label": "Fast-mode LoRA",
+      "group": "Models"
+    }
   ],
-  "hide": [["105:107"], ["119"], ["120"], ["105:91", "fps"]]
+  "hide": [
+    [
+      "105:107"
+    ],
+    [
+      "119"
+    ],
+    [
+      "120"
+    ],
+    [
+      "105:91",
+      "fps"
+    ]
+  ]
 }

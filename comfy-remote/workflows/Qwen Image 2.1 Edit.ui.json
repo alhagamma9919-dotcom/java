@@ -1,17 +1,192 @@
 {
   "note": "Photo 1 is edited. Photo 2 is the reference (clothes, object, style, person…). Describe the change in plain words.",
   "fields": [
-    {"t": [["470", "image"]], "label": "Photo 1 (to edit)", "group": "Photos"},
-    {"t": [["475", "image"]], "label": "Photo 2 (reference)", "group": "Photos"},
-    {"t": [["459:484", "on_false"], ["459:500", "prompt"]], "label": "What should change?", "kind": "prompt", "group": "Prompt"},
-    {"t": [["459:474", "negative_prompt"]], "label": "Avoid (negative prompt)", "kind": "prompt", "group": "Prompt"},
-    {"t": [["459:484", "switch"]], "label": "✨ AI prompt enhancer", "help": "A 9B model rewrites your instruction in detail. Better results, slower.", "group": "Prompt"},
-    {"t": [["459:458", "seed"], ["459:500", "sampling_mode.seed"]], "label": "Seed", "group": "Quality"},
-    {"t": [["459:458", "steps"]], "label": "Steps", "min": 1, "max": 60, "step": 1, "group": "Quality"},
-    {"t": [["459:458", "cfg"]], "label": "CFG", "min": 1, "max": 10, "step": 0.1, "group": "Quality"},
-    {"t": [["459:468", "switch"]], "label": "Custom output size", "help": "Off = same size as Photo 1", "group": "Size"},
-    {"t": [["459:456", "width"]], "label": "Width", "min": 256, "max": 2048, "step": 32, "group": "Size"},
-    {"t": [["459:456", "height"]], "label": "Height", "min": 256, "max": 2048, "step": 32, "group": "Size"}
+    {
+      "t": [
+        [
+          "470",
+          "image"
+        ]
+      ],
+      "label": "Photo 1 (to edit)",
+      "group": "Photos"
+    },
+    {
+      "t": [
+        [
+          "475",
+          "image"
+        ]
+      ],
+      "label": "Photo 2 (reference)",
+      "group": "Photos"
+    },
+    {
+      "t": [
+        [
+          "459:484",
+          "on_false"
+        ],
+        [
+          "459:500",
+          "prompt"
+        ]
+      ],
+      "label": "What should change?",
+      "kind": "prompt",
+      "group": "Prompt"
+    },
+    {
+      "t": [
+        [
+          "459:474",
+          "negative_prompt"
+        ]
+      ],
+      "label": "Avoid (negative prompt)",
+      "kind": "prompt",
+      "group": "Prompt"
+    },
+    {
+      "t": [
+        [
+          "459:484",
+          "switch"
+        ]
+      ],
+      "label": "✨ AI prompt enhancer",
+      "help": "A 9B model rewrites your instruction in detail. Better results, slower.",
+      "group": "Prompt"
+    },
+    {
+      "t": [
+        [
+          "459:458",
+          "seed"
+        ],
+        [
+          "459:500",
+          "sampling_mode.seed"
+        ]
+      ],
+      "label": "Seed",
+      "group": "Quality"
+    },
+    {
+      "t": [
+        [
+          "459:458",
+          "steps"
+        ]
+      ],
+      "label": "Steps",
+      "min": 1,
+      "max": 60,
+      "step": 1,
+      "group": "Quality"
+    },
+    {
+      "t": [
+        [
+          "459:458",
+          "cfg"
+        ]
+      ],
+      "label": "CFG",
+      "min": 1,
+      "max": 10,
+      "step": 0.1,
+      "group": "Quality"
+    },
+    {
+      "t": [
+        [
+          "459:468",
+          "switch"
+        ]
+      ],
+      "label": "Custom output size",
+      "help": "Off = same size as Photo 1",
+      "group": "Size"
+    },
+    {
+      "t": [
+        [
+          "459:456",
+          "width"
+        ]
+      ],
+      "label": "Width",
+      "min": 256,
+      "max": 2048,
+      "step": 32,
+      "group": "Size"
+    },
+    {
+      "t": [
+        [
+          "459:456",
+          "height"
+        ]
+      ],
+      "label": "Height",
+      "min": 256,
+      "max": 2048,
+      "step": 32,
+      "group": "Size"
+    },
+    {
+      "t": [
+        [
+          "459:451",
+          "unet_name"
+        ]
+      ],
+      "label": "Image model",
+      "help": "int8 = smaller/faster · fp16/bf16 = full quality, needs more VRAM",
+      "group": "Models"
+    },
+    {
+      "t": [
+        [
+          "459:451",
+          "weight_dtype"
+        ]
+      ],
+      "label": "Load as",
+      "help": "fp8 = load a full model at half the VRAM",
+      "group": "Models"
+    },
+    {
+      "t": [
+        [
+          "459:453",
+          "clip_name"
+        ]
+      ],
+      "label": "Text encoder",
+      "group": "Models"
+    },
+    {
+      "t": [
+        [
+          "459:477",
+          "clip_name"
+        ]
+      ],
+      "label": "Prompt enhancer model",
+      "group": "Models"
+    }
   ],
-  "hide": [["459:479"], ["459:495"], ["472"]]
+  "hide": [
+    [
+      "459:479"
+    ],
+    [
+      "459:495"
+    ],
+    [
+      "472"
+    ]
+  ]
 }
