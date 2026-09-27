@@ -1,26 +1,6 @@
 {
-  "note": "Photo 1 is edited. Photo 2 is the reference (clothes, object, style, person…). Describe the change in plain words.",
+  "note": "Photo 1 is edited; other photos are references (clothes, objects, style, people). Add up to 5, or remove all for text-to-image.",
   "fields": [
-    {
-      "t": [
-        [
-          "470",
-          "image"
-        ]
-      ],
-      "label": "Photo 1 (to edit)",
-      "group": "Photos"
-    },
-    {
-      "t": [
-        [
-          "475",
-          "image"
-        ]
-      ],
-      "label": "Photo 2 (reference)",
-      "group": "Photos"
-    },
     {
       "t": [
         [
@@ -106,7 +86,7 @@
         ]
       ],
       "label": "Custom output size",
-      "help": "Off = same size as Photo 1",
+      "help": "Off = same size as Photo 1 (always on when there are no photos)",
       "group": "Size"
     },
     {
@@ -188,5 +168,50 @@
     [
       "472"
     ]
-  ]
+  ],
+  "imageSlots": {
+    "nodes": [
+      "470",
+      "475"
+    ],
+    "max": 5,
+    "labels": [
+      "to edit",
+      "reference",
+      "reference",
+      "reference",
+      "reference"
+    ],
+    "targets": [
+      [
+        "459:474",
+        "images.image_{n}"
+      ],
+      [
+        "459:485",
+        "images.image{n0}",
+        2
+      ]
+    ],
+    "emptyNote": "No photos: creates a new image from the prompt. Custom output size is switched on automatically.",
+    "empty": {
+      "set": [
+        [
+          "459:468",
+          "switch",
+          true
+        ]
+      ],
+      "remove": [
+        "472",
+        "459:485"
+      ],
+      "drop": [
+        [
+          "459:500",
+          "image"
+        ]
+      ]
+    }
+  }
 }

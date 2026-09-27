@@ -79,10 +79,18 @@ header{position:sticky;top:0;z-index:10;background:linear-gradient(var(--bg) 85%
 .gal img,.gal video{width:100%;height:100%;object-fit:cover}
 .gal .play{position:absolute;right:5px;bottom:5px;font-size:12px;background:#000a;border-radius:6px;padding:1px 5px}
 #live{width:100%;border-radius:10px;margin-top:10px}
+#progText{font-size:12px;color:var(--mute);margin-top:4px;min-height:1em;text-align:center}
+.slots{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-top:8px}
+.slot{background:var(--card2);border:1px solid var(--line);border-radius:12px;padding:6px}
+.slot img{width:100%;aspect-ratio:1;object-fit:cover;border-radius:8px;display:block;background:#000}
+.slot .row{margin-top:6px;gap:4px}
+.slot .row button{padding:6px 8px;font-size:13px}
+.slot .cap{font-size:12px;color:var(--mute);margin-top:4px}
+.slot.add{display:flex;align-items:center;justify-content:center;min-height:120px;border-style:dashed;cursor:pointer;color:var(--mute)}
 .job{display:flex;gap:8px;align-items:center;padding:8px 0;border-top:1px solid var(--line)}
 .job:first-of-type{border-top:0}
 pre{white-space:pre-wrap;word-break:break-all;font:12px/1.4 ui-monospace,Consolas,monospace;background:#0a0c10;border:1px solid var(--line);border-radius:10px;padding:10px;max-height:60vh;overflow:auto;margin:8px 0 0}
-.stat{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;text-align:center}
+.stat{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;text-align:center}
 .stat div{background:var(--card2);border-radius:10px;padding:8px}
 .stat b{display:block;font-size:18px}
 /* overlays */
@@ -174,8 +182,10 @@ pre{white-space:pre-wrap;word-break:break-all;font:12px/1.4 ui-monospace,Consola
       <div class="stat">
         <div><b id="gUtil">–</b><span class="mute">Load</span></div>
         <div><b id="gMem">–</b><span class="mute">VRAM</span></div>
-        <div><b id="gTemp">–</b><span class="mute">Temp</span></div>
+        <div><b id="gRam">–</b><span class="mute">RAM</span></div>
+        <div><b id="gTemp">–</b><span class="mute">GPU temp</span></div>
       </div>
+      <div id="commitInfo" class="mute" style="margin-top:8px"></div>
     </div>
     <div class="card">
       <div class="row"><h3 class="grow" style="margin:0">ComfyUI log</h3><label class="switch mute"><input id="logAuto" type="checkbox" checked> live</label><button id="logBtn">↻</button></div>
@@ -191,7 +201,9 @@ pre{white-space:pre-wrap;word-break:break-all;font:12px/1.4 ui-monospace,Consola
     <button id="runBtn" class="pri">✦ Generate</button>
   </div>
   <div class="prog"><i id="progBar2"></i></div>
+  <div id="progText"></div>
 </div></div>
+<input id="slotFile" type="file" accept="image/*" class="hide">
 
 <div id="viewer" class="ov hide">
   <div class="row"><span id="vName" class="mute grow" style="overflow:hidden;text-overflow:ellipsis"></span><button id="vClose">✕</button></div>
@@ -270,13 +282,21 @@ async function pollStatus(){
     const prev = pcState; pcState = s.state;
     $('#dot').className = 'dot ' + s.state;
     $('#pcState').textContent = { running: 'ComfyUI running', starting: 'ComfyUI starting…', stopped: 'ComfyUI stopped' }[s.state];
-    const g = s.gpu;
-    $('#pcInfo').textContent = g ? `GPU ${g.util}% · ${(g.mem_used / 1024).toFixed(1)}/${(g.mem_total / 1024).toFixed(0)} GB · ${g.temp}°C`
-      : (s.exit_code != null ? `Exited with code ${s.exit_code}. See PC → log` : ' ');
+    const g = s.gpu, ram = s.ram;
+    const parts = [];
+    if (g) parts.push(`GPU ${g.util}%`, `VRAM ${(g.mem_used / 1024).toFixed(1)}/${(g.mem_total / 1024).toFixed(0)} GB`);
+    if (ram) parts.push(`RAM ${ram.used}/${Math.round(ram.total)} GB`);
+    if (g) parts.push(`${g.temp}°C`);
+    $('#pcInfo').textContent = s.exit_code != null && s.state === 'stopped' ? `Exited with code ${s.exit_code}. See PC → log` : (parts.join(' · ') || ' ');
+    if (ram) {
+      $('#gRam').textContent = `${ram.used}/${Math.round(ram.total)} GB`;
+      $('#commitInfo').textContent = `RAM + page file in use: ${ram.commit_used} / ${Math.round(ram.commit_total)} GB` +
+        (ram.commit_used > ram.total ? ' · spilling to SSD (slower)' : '');
+    }
     if (g) {
       $('#gpuName').textContent = g.name;
       $('#gUtil').textContent = g.util + '%';
-      $('#gMem').textContent = (g.mem_used / 1024).toFixed(1) + ' GB';
+      $('#gMem').textContent = `${(g.mem_used / 1024).toFixed(1)}/${(g.mem_total / 1024).toFixed(0)} GB`;
       $('#gTemp').textContent = g.temp + '°';
     }
     $('#apiKeyInfo').innerHTML = s.api_key
@@ -291,7 +311,7 @@ async function pollStatus(){
     if (running && prev !== 'running') onComfyUp();
     if (!running) showFormMsg(s.state === 'starting' ? 'ComfyUI is starting… (models load on first run, this can take a minute)' : 'ComfyUI is stopped. Tap ▶ Start at the top.');
   } catch (e) {
-    if (e.message !== 'Login required') { $('#dot').className = 'dot'; $('#pcState').textContent = 'PC not reachable'; $('#pcInfo').textContent = 'Is the PC on, launcher running, Tailscale connected?'; }
+    if (e.message !== 'Login required') { $('#dot').className = 'dot'; $('#pcState').textContent = 'PC not reachable'; $('#pcInfo').textContent = `Is the PC on, launcher running, Tailscale connected? (${e.message})`; }
   }
 }
 async function pcAction(a){
@@ -418,6 +438,8 @@ async function buildForm(){
   const missing = Object.values(wf).map(n => n.class_type).filter(c => !specs[c]);
   const titleOf = id => (wf[id]._meta && wf[id]._meta.title) || wf[id].class_type;
   const hidden = new Set((ui.hide || []).map(h => h.join('|')));
+  const S = ui.imageSlots;
+  if (S) for (const id of S.nodes) hidden.add(id);
   const taken = new Set();
   fields = [];
   for (const h of ui.fields || []) {                    // curated fields from <workflow>.ui.json
@@ -456,6 +478,7 @@ async function buildForm(){
     ];
   }
   let html = ui.note ? `<div class="card mute">ℹ ${esc(ui.note)}</div>` : '';
+  if (S) html += '<div class="card" id="slotCard"></div>';
   html += missing.length ? `<div class="card err">⚠ ComfyUI doesn't know these nodes: ${esc([...new Set(missing)].join(', '))}. Install them on the PC (ComfyUI Manager) or this workflow will fail.</div>` : '';
   for (const [name, list] of groups) {
     if (!list.length) continue;
@@ -467,7 +490,71 @@ async function buildForm(){
   $('#form').innerHTML = html || '<div class="card mute">This workflow has no editable inputs.</div>';
   showFormMsg(null);
   for (const f of fields) if (f.kind === 'image') showInputPreview(f);
+  if (S) renderSlots();
   $('#runBtn').disabled = pcState !== 'running';
+}
+
+// ---------------------------------------------------------------- multi-photo slots (ui.imageSlots)
+const SLOT_KEY = '@slots';
+function slotList(){
+  const S = ui.imageSlots; if (!S) return [];
+  if (Array.isArray(vals[SLOT_KEY])) return vals[SLOT_KEY];
+  return S.nodes.map(id => wf[id] && wf[id].inputs.image).filter(Boolean);
+}
+function renderSlots(){
+  const S = ui.imageSlots, list = slotList(), box = $('#slotCard'); if (!box) return;
+  const lab = i => (S.labels && S.labels[i]) || 'reference';
+  box.innerHTML = `<h3>Photos (${list.length}/${S.max})</h3>
+    ${list.length ? '' : `<div class="mute">${esc(S.emptyNote || 'No photos: text-to-image mode.')}</div>`}
+    <div class="slots">${list.map((name, i) => `<div class="slot">
+      <img src="${viewUrl(name, 'input')}" alt="" loading="lazy">
+      <div class="cap">Photo ${i + 1} · ${esc(lab(i))}</div>
+      <div class="row">
+        <button data-slot-change="${i}" class="grow">Change</button>
+        ${i ? `<button data-slot-up="${i}" title="Make it Photo ${i}">⬆</button>` : ''}
+        <button data-slot-del="${i}" class="bad" title="Remove">✕</button>
+      </div></div>`).join('')}
+      ${list.length < S.max ? '<div class="slot add" data-slot-add="1">＋ Add photo</div>' : ''}
+    </div>`;
+}
+function setSlots(list){ vals[SLOT_KEY] = list; saveVals(); renderSlots(); }
+let slotTarget = null;
+$('#form').addEventListener('click', e => {
+  const t = e.target.closest('[data-slot-add],[data-slot-change],[data-slot-del],[data-slot-up]'); if (!t) return;
+  const list = [...slotList()];
+  if (t.dataset.slotDel !== undefined) { list.splice(+t.dataset.slotDel, 1); return setSlots(list); }
+  if (t.dataset.slotUp !== undefined) { const i = +t.dataset.slotUp; [list[i - 1], list[i]] = [list[i], list[i - 1]]; return setSlots(list); }
+  slotTarget = t.dataset.slotChange !== undefined ? +t.dataset.slotChange : list.length;
+  $('#slotFile').click();
+});
+$('#slotFile').onchange = async e => {
+  const file = e.target.files[0]; e.target.value = ''; if (!file || slotTarget === null) return;
+  toast('Uploading…');
+  try {
+    const name = await upload(await shrink(file), file.name || 'phone.jpg');
+    const list = [...slotList()]; list[slotTarget] = name; setSlots(list.filter(Boolean)); toast('Photo added');
+  } catch (err) { toast(err.message, 5000); }
+};
+// Rewire the prompt for the chosen number of photos
+function applySlots(p){
+  const S = ui.imageSlots; if (!S) return;
+  const list = slotList();
+  const fmt = (pat, n) => pat.replace('{n0}', n - 1).replace('{n}', n);
+  const idOf = i => S.nodes[i] || 'cr_img_' + (i + 1);
+  S.nodes.forEach((id, i) => { if (i >= list.length) delete p[id]; });
+  list.forEach((name, i) => { p[idOf(i)] = { class_type: 'LoadImage', inputs: { image: name }, _meta: { title: 'Photo ' + (i + 1) } }; });
+  for (const [nid, pat, minFill] of S.targets) {
+    if (!p[nid]) continue;
+    for (let n = 1; n <= S.max + 1; n++) delete p[nid].inputs[fmt(pat, n)];
+    if (!list.length) continue;
+    const count = Math.max(list.length, minFill || 0);
+    for (let n = 1; n <= count; n++) p[nid].inputs[fmt(pat, n)] = [idOf(Math.min(n, list.length) - 1), 0];
+  }
+  if (!list.length && S.empty) {
+    for (const [nid, k, v] of S.empty.set || []) if (p[nid]) p[nid].inputs[k] = v;
+    for (const id of S.empty.remove || []) delete p[id];
+    for (const [nid, k] of S.empty.drop || []) if (p[nid]) delete p[nid].inputs[k];
+  }
 }
 
 const cur = f => (f.k in vals ? vals[f.k] : f.orig);
@@ -608,6 +695,7 @@ async function run(){
         }
         if (f.k in vals) for (const [i, k] of f.targets) p[i].inputs[k] = vals[f.k];
       }
+      applySlots(p);
       saveVals();
       const j = await jpost(C + '/prompt', { prompt: p, client_id: clientId });
       jobs[j.prompt_id] = { wf: wfName, t: Date.now(), done: false };
@@ -635,6 +723,25 @@ function formatError(e){
   return s;
 }
 function setStatus(t, bad){ const s = $('#status'); s.textContent = t; s.className = bad ? 'err' : 'mute'; }
+let pgs = { node: null };
+const fmtTime = sec => sec < 60 ? Math.round(sec) + ' s' : Math.floor(sec / 60) + ' min ' + Math.round(sec % 60) + ' s';
+function onProgress(d){
+  const now = performance.now();
+  if (pgs.node !== d.node || d.value < pgs.last) pgs = { node: d.node, t0: now, v0: d.value };
+  pgs.last = d.value;
+  const pct = Math.round(d.value / d.max * 100);
+  let speed = '';
+  if (d.value > pgs.v0) {
+    const per = (now - pgs.t0) / (d.value - pgs.v0) / 1000;
+    speed = ` · ${per < 1 ? (1 / per).toFixed(1) + ' it/s' : per.toFixed(1) + ' s/it'} · ~${fmtTime(per * (d.max - d.value))} left`;
+  }
+  const n = wf && wf[d.node];
+  const title = (n && n._meta && n._meta.title) || (n && n.class_type) || 'Working';
+  const txt = `${pct}% · step ${d.value}/${d.max}${speed}`;
+  setStatus(`${title} · ${txt}`);
+  $('#progText').textContent = txt;
+  setProg(d.value / d.max);
+}
 function setProg(x){ const w = Math.round(Math.max(0, Math.min(1, x)) * 100) + '%'; $('#progBar').style.width = w; $('#progBar2').style.width = w; }
 
 async function finishJob(id){
@@ -653,6 +760,7 @@ async function finishJob(id){
     return;
   }
   const files = outputsOf(item);
+  $('#progText').textContent = '';
   if (runningId === id || !runningId) { setStatus(files.length ? `Done · ${files.length} file(s)` : 'Done (no outputs; add a Save Image / Save Video node)'); setProg(1); $('#live').classList.add('hide'); }
   const texts = [];
   for (const out of Object.values(item.outputs || {})) if (Array.isArray(out.text)) texts.push(...out.text.filter(t => typeof t === 'string' && t.length > 30));
@@ -684,9 +792,13 @@ function resultCard(x, from){
 
 async function reuse(url, fn){
   const f = fields.find(x => x.kind === 'image');
-  if (!f) return toast('This workflow has no image input');
+  if (!f && !ui.imageSlots) return toast('This workflow has no image input');
   toast('Sending to input…');
   const blob = await (await api(url)).blob();
+  if (!f) {
+    const list = [...slotList()]; list[0] = await upload(blob, fn); setSlots(list);
+    showTab('create'); closeViewer(); return toast('Set as Photo 1');
+  }
   vals[f.k] = await upload(blob, fn);
   saveVals(); await buildForm(); showTab('create'); closeViewer();
   toast('Image set as input');
@@ -736,7 +848,7 @@ function connect(){
     switch (m.type) {
       case 'status': loadQueue(); break;
       case 'execution_start': if (jobs[d.prompt_id]) { runningId = d.prompt_id; setStatus(`Running · ${jobs[d.prompt_id].wf}`); setProg(0); } break;
-      case 'progress': if (d.max && (!d.prompt_id || d.prompt_id === runningId)) setProg(d.value / d.max); break;
+      case 'progress': if (d.max && (!d.prompt_id || d.prompt_id === runningId)) onProgress(d); break;
       case 'progress_state': break;
       case 'executing':
         if (!jobs[d.prompt_id]) break;
@@ -748,7 +860,7 @@ function connect(){
         if (jobs[d.prompt_id]) { jobs[d.prompt_id].done = true; saveJobs(); setStatus(`Error in ${d.node_type || d.node_id}: ${d.exception_message}`, true); loadQueue(); }
         break;
       case 'execution_interrupted':
-        if (jobs[d.prompt_id]) { jobs[d.prompt_id].done = true; saveJobs(); setStatus('Stopped', true); setProg(0); loadQueue(); }
+        if (jobs[d.prompt_id]) { jobs[d.prompt_id].done = true; saveJobs(); setStatus('Stopped', true); setProg(0); $('#progText').textContent = ''; loadQueue(); }
         break;
     }
   };
@@ -819,7 +931,9 @@ async function boot(){
   ];
 }
 document.addEventListener('visibilitychange', () => { if (!document.hidden) { pollStatus(); connect(); loadQueue(); } });
-boot();
+if (location.protocol === 'file:') {
+  document.body.innerHTML = '<div class="card" style="margin-top:40px"><h3>Open it through the launcher</h3><p>This page only works via the link, not as a file.</p><p>On the PC: <b>http://127.0.0.1:8190</b><br>On the phone (Tailscale): <b>http://&lt;pc-name&gt;:8190</b></p></div>';
+} else boot();
 </script>
 </body>
 </html>

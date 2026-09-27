@@ -168,6 +168,40 @@ def gpu_stats():
     return v
 
 
+def ram_stats():
+    """System RAM and commit (RAM + page file) in GB."""
+    try:
+        if WINDOWS:
+            import ctypes
+
+            class MemStatus(ctypes.Structure):
+                _fields_ = [("dwLength", ctypes.c_ulong), ("dwMemoryLoad", ctypes.c_ulong),
+                            ("ullTotalPhys", ctypes.c_ulonglong), ("ullAvailPhys", ctypes.c_ulonglong),
+                            ("ullTotalPageFile", ctypes.c_ulonglong), ("ullAvailPageFile", ctypes.c_ulonglong),
+                            ("ullTotalVirtual", ctypes.c_ulonglong), ("ullAvailVirtual", ctypes.c_ulonglong),
+                            ("ullAvailExtendedVirtual", ctypes.c_ulonglong)]
+
+            m = MemStatus()
+            m.dwLength = ctypes.sizeof(MemStatus)
+            ctypes.windll.kernel32.GlobalMemoryStatusEx(ctypes.byref(m))
+            total, avail = m.ullTotalPhys, m.ullAvailPhys
+            c_total, c_avail = m.ullTotalPageFile, m.ullAvailPageFile
+        else:
+            info = {}
+            with open("/proc/meminfo") as f:
+                for line in f:
+                    k, v = line.split(":")
+                    info[k] = int(v.split()[0]) * 1024
+            total, avail = info["MemTotal"], info["MemAvailable"]
+            c_total = total + info.get("SwapTotal", 0)
+            c_avail = avail + info.get("SwapFree", 0)
+        gb = lambda x: round(x / 2**30, 1)
+        return {"used": gb(total - avail), "total": gb(total),
+                "commit_used": gb(c_total - c_avail), "commit_total": gb(c_total)}
+    except Exception:
+        return None
+
+
 # ---------------------------------------------------------------- security
 _fails = {}
 
@@ -238,6 +272,7 @@ async def status(request):
         "uptime": int(time.time() - Comfy.started) if Comfy.alive() else None,
         "exit_code": exit_code,
         "gpu": gpu,
+        "ram": ram_stats(),
         "api_key": bool(CFG.get("comfy_api_key")),
     })
 
