@@ -6,5 +6,5 @@
   "comfy_args": ["--preview-method", "auto"],
   "pin": "",
   "comfy_api_key": "",
-  "autostart_comfy": true
+  "autostart_comfy": false
 }

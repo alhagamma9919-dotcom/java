@@ -153,6 +153,11 @@ pre{white-space:pre-wrap;word-break:break-all;font:12px/1.4 ui-monospace,Consola
       <div class="prog"><i id="progBar"></i></div>
       <img id="live" class="hide" alt="Live preview">
     </div>
+    <div class="card hide" id="quickCard">
+      <h3>Prompt &amp; run</h3>
+      <textarea id="quickPrompt" rows="3" placeholder="Change the prompt and run again…"></textarea>
+      <div class="row" style="margin-top:8px"><span id="quickWf" class="mute grow"></span><button id="quickRun" class="pri">✦ Run</button></div>
+    </div>
     <div class="card">
       <div class="row"><h3 class="grow" style="margin:0">Queue</h3><button id="clearQBtn">Clear waiting</button></div>
       <div id="queueList" class="mute" style="margin-top:6px">Empty</div>
@@ -492,7 +497,24 @@ async function buildForm(){
   for (const f of fields) if (f.kind === 'image') showInputPreview(f);
   if (S) renderSlots();
   $('#runBtn').disabled = pcState !== 'running';
+  updateQuick();
 }
+
+// ---------------------------------------------------------------- quick prompt on the Result tab
+const mainPrompt = () => fields.find(f => f.kind === 'prompt');
+function updateQuick(){
+  const f = mainPrompt();
+  $('#quickCard').classList.toggle('hide', !f);
+  if (!f) return;
+  $('#quickPrompt').value = cur(f);
+  $('#quickWf').textContent = wfName || '';
+}
+$('#quickPrompt').addEventListener('input', e => {
+  const f = mainPrompt(); if (!f) return;
+  vals[f.k] = e.target.value; saveVals();
+  const el = document.querySelector(`#form [data-k="${CSS.escape(f.k)}"]`); if (el) el.value = e.target.value;
+});
+$('#quickRun').onclick = () => run();
 
 // ---------------------------------------------------------------- multi-photo slots (ui.imageSlots)
 const SLOT_KEY = '@slots';
@@ -914,7 +936,7 @@ function showTab(t){
   for (const s of ['create', 'result', 'gallery', 'pc']) $('#tab-' + s).classList.toggle('hide', s !== t);
   if (t === 'gallery') loadGallery().catch(() => {});
   if (t === 'pc') loadLog();
-  if (t === 'result') loadQueue();
+  if (t === 'result') { loadQueue(); updateQuick(); }
 }
 for (const b of $$('.tabs button')) b.onclick = () => showTab(b.dataset.tab);
 

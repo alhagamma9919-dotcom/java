@@ -48,7 +48,7 @@ DEFAULTS = {
     "comfy_args": ["--preview-method", "auto"],
     "pin": "",
     "comfy_api_key": "",
-    "autostart_comfy": True,
+    "autostart_comfy": False,
 }
 
 

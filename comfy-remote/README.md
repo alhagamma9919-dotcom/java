@@ -54,7 +54,7 @@ put it in `config.json` as `"comfy_api_key"`. The key stays on the PC and is nev
 | `comfy_args` | `--preview-method auto` | extra ComfyUI args (e.g. `--lowvram`) |
 | `pin` | random 6 digits | phone login PIN (change it any time, then restart the task) |
 | `comfy_api_key` | empty | Comfy.org key for API nodes |
-| `autostart_comfy` | `true` | start ComfyUI as soon as the PC boots |
+| `autostart_comfy` | `false` | `true` = start ComfyUI as soon as the PC boots (otherwise tap ▶ Start) |
 
 After editing: `Stop-ScheduledTask "Comfy Remote"; Start-ScheduledTask "Comfy Remote"`.
 
