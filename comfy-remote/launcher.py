@@ -48,6 +48,7 @@ DEFAULTS = {
     "comfy_args": ["--preview-method", "auto"],
     "pin": "",
     "comfy_api_key": "",
+    "autostart_comfy": True,
 }
 
 
@@ -375,6 +376,11 @@ async def ws_proxy(request, session):
 # ---------------------------------------------------------------- app
 async def on_startup(app):
     app["session"] = aiohttp.ClientSession()
+    if CFG.get("autostart_comfy"):
+        try:
+            Comfy.start()          # warm up at boot, so it is ready when you open the phone
+        except Exception:
+            pass
 
 
 async def on_cleanup(app):
