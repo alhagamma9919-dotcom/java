@@ -1,6 +1,7 @@
 # Comfy Remote installer. Run in PowerShell as Administrator:
-#   powershell -ExecutionPolicy Bypass -File install.ps1 [-ComfyDir C:\ComfyUI]
-param([string]$ComfyDir = "C:\ComfyUI")
+#   powershell -ExecutionPolicy Bypass -File install.ps1 [-ComfyDir C:\ComfyUI] [-AllowLAN]
+# By default only Tailscale devices can connect. -AllowLAN also allows the local Wi-Fi/hotspot.
+param([string]$ComfyDir = "C:\ComfyUI", [switch]$AllowLAN)
 $ErrorActionPreference = "Stop"
 $here = $PSScriptRoot
 
@@ -18,10 +19,12 @@ $set = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnB
         -ExecutionTimeLimit ([TimeSpan]::Zero) -RestartCount 3 -RestartInterval (New-TimeSpan -Minutes 1)
 Register-ScheduledTask -TaskName "Comfy Remote" -Action $act -Trigger $trg -Settings $set -Force | Out-Null
 
-# Firewall: port 8190 only from the home network and Tailscale
+# Firewall: port 8190 only from Tailscale (plus the local network with -AllowLAN)
+$remote = @("100.64.0.0/10")
+if ($AllowLAN) { $remote += "LocalSubnet" }
 Remove-NetFirewallRule -DisplayName "Comfy Remote" -ErrorAction SilentlyContinue
 New-NetFirewallRule -DisplayName "Comfy Remote" -Direction Inbound -Protocol TCP -LocalPort 8190 `
-    -RemoteAddress LocalSubnet, 100.64.0.0/10 -Action Allow | Out-Null
+    -RemoteAddress $remote -Action Allow | Out-Null
 
 Stop-ScheduledTask -TaskName "Comfy Remote" -ErrorAction SilentlyContinue
 Start-ScheduledTask -TaskName "Comfy Remote"
@@ -33,7 +36,8 @@ $lan = (Get-NetIPAddress -AddressFamily IPv4 | Where-Object { $_.PrefixOrigin -e
 ""
 "Comfy Remote is running."
 "  PIN           : $($c.pin)"
-if ($lan) { "  Home Wi-Fi    : http://${lan}:8190" }
+if ($lan -and $AllowLAN) { "  Home Wi-Fi    : http://${lan}:8190" }
 if ($ts)  { "  Tailscale     : http://${ts}:8190   (or http://$($env:COMPUTERNAME.ToLower()):8190)" }
+else      { "  Tailscale not logged in yet: log in from the tray icon, then use http://$($env:COMPUTERNAME.ToLower()):8190" }
 ""
 "Put your API-format workflows in: $here\workflows"

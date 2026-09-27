@@ -10,7 +10,7 @@ Phone ──(Wi-Fi / Tailscale, PIN)──► launcher.py :8190 ──► ComfyU
 
 - `launcher.py` is always on (starts at logon, hidden). It starts/stops ComfyUI and serves the UI.
 - ComfyUI only listens on `127.0.0.1`, so it is never exposed directly.
-- Every request needs the PIN, and only home-network / Tailscale addresses are accepted.
+- Every request needs the PIN. The firewall only lets Tailscale devices in (`install.ps1 -AllowLAN` also allows your Wi-Fi).
 
 ## Install (once)
 1. Install ComfyUI in `C:\ComfyUI` with a `venv` (see the main guide), and make sure your
