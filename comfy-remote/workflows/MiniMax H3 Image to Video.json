@@ -60,7 +60,7 @@
   },
   "105:11": {
     "inputs": {
-      "vae_name": "minimax_h3_video_vae_int8_convrot.safetensors"
+      "vae_name": "minimax_h3_video_vae_fp16.safetensors"
     },
     "class_type": "VAELoader",
     "_meta": {
@@ -120,13 +120,10 @@
   "105:9": {
     "inputs": {
       "scheduler": "simple",
-      "steps": [
-        "105:123",
-        0
-      ],
+      "steps": 20,
       "denoise": 1,
       "model": [
-        "105:122",
+        "105:6",
         0
       ]
     },
@@ -166,7 +163,7 @@
   "105:16": {
     "inputs": {
       "model": [
-        "105:122",
+        "105:6",
         0
       ],
       "conditioning": [
@@ -191,7 +188,7 @@
   },
   "105:13": {
     "inputs": {
-      "clip_name": "qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors",
+      "clip_name": "qwen3vl_32b_minimax_h3_int8_convrot.safetensors",
       "type": "minimax",
       "device": "default"
     },
@@ -282,87 +279,6 @@
     "class_type": "PrimitiveFloat",
     "_meta": {
       "title": "Float (duration)"
-    }
-  },
-  "105:121": {
-    "inputs": {
-      "lora_name": "minimax_h3_fl2v_turbo_8step_v1.0_comfyui_bf16.safetensors",
-      "strength_model": 1,
-      "model": [
-        "105:6",
-        0
-      ]
-    },
-    "class_type": "LoraLoaderModelOnly",
-    "_meta": {
-      "title": "Load LoRA"
-    }
-  },
-  "105:122": {
-    "inputs": {
-      "switch": [
-        "105:126",
-        0
-      ],
-      "on_false": [
-        "105:6",
-        0
-      ],
-      "on_true": [
-        "105:121",
-        0
-      ]
-    },
-    "class_type": "ComfySwitchNode",
-    "_meta": {
-      "title": "If/Else Switch (Model)"
-    }
-  },
-  "105:123": {
-    "inputs": {
-      "switch": [
-        "105:126",
-        0
-      ],
-      "on_false": [
-        "105:124",
-        0
-      ],
-      "on_true": [
-        "105:125",
-        0
-      ]
-    },
-    "class_type": "ComfySwitchNode",
-    "_meta": {
-      "title": "If/Else Switch (Steps)"
-    }
-  },
-  "105:124": {
-    "inputs": {
-      "value": 20
-    },
-    "class_type": "PrimitiveInt",
-    "_meta": {
-      "title": "Int"
-    }
-  },
-  "105:125": {
-    "inputs": {
-      "value": 8
-    },
-    "class_type": "PrimitiveInt",
-    "_meta": {
-      "title": "Int"
-    }
-  },
-  "105:126": {
-    "inputs": {
-      "value": false
-    },
-    "class_type": "PrimitiveBoolean",
-    "_meta": {
-      "title": "Boolean (Enable Lightning LoRA)"
     }
   }
 }

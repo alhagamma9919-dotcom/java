@@ -57,8 +57,8 @@
   },
   "459:451": {
     "inputs": {
-      "unet_name": "qwen_image_2.1_int8_convrot.safetensors",
-      "weight_dtype": "default"
+      "unet_name": "qwen_image_2.1_bf16.safetensors",
+      "weight_dtype": "fp8_e4m3fn"
     },
     "class_type": "UNETLoader",
     "_meta": {
@@ -67,7 +67,7 @@
   },
   "459:453": {
     "inputs": {
-      "clip_name": "qwen3vl_8b_int8_convrot.safetensors",
+      "clip_name": "qwen3vl_8b_bf16.safetensors",
       "type": "qwen_image",
       "device": "default"
     },
@@ -205,7 +205,7 @@
   },
   "459:477": {
     "inputs": {
-      "clip_name": "qwen3.5_9b_qwen_image_2.1_pe_i2i.int8_convrot.safetensors",
+      "clip_name": "qwen3vl_8b_bf16.safetensors",
       "type": "qwen_image",
       "device": "default"
     },

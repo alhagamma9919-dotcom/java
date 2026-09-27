@@ -55,7 +55,7 @@
         ]
       ],
       "label": "✨ AI prompt enhancer",
-      "help": "A 9B model rewrites your instruction in detail. Better results, slower.",
+      "help": "Needs the qwen3.5_9b…pe_i2i model (not installed). Keep OFF until you download it and pick it under Models.",
       "group": "Prompt"
     },
     {
@@ -154,7 +154,7 @@
         ]
       ],
       "label": "Load as",
-      "help": "fp8 = load a full model at half the VRAM",
+      "help": "fp8_e4m3fn = bf16 model at half the VRAM (recommended on 12 GB)",
       "group": "Models"
     },
     {
