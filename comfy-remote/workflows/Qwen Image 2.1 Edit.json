@@ -179,7 +179,7 @@
         "459:480",
         0
       ],
-      "negative_prompt": "",
+      "negative_prompt": "plastic skin, waxy skin, airbrushed skin, overly smooth skin, beauty filter, porcelain skin, doll-like face, CGI, 3D render, cartoon, anime, illustration, painting, unrealistic, uncanny, changed identity, different face, distorted face, asymmetrical eyes, cross-eyed, deformed facial features, unnatural body proportions, distorted body, elongated neck, bad anatomy, extra limbs, missing limbs, extra fingers, missing fingers, fused fingers, mutated hands, deformed hands, unnatural skin tone, oversaturated, over-sharpened, HDR, harsh lighting, inconsistent lighting, warped clothing, melted fabric, floating objects, blurry, low resolution, noise, jpeg artifacts, watermark, text, logo, signature",
       "resolution": 0,
       "clip": [
         "459:453",
