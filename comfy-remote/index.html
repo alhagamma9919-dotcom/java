@@ -224,9 +224,10 @@ pre{white-space:pre-wrap;word-break:break-all;font:12px/1.4 ui-monospace,Consola
 
 <div id="filesOv" class="ov hide">
   <div class="row"><b id="fTitle" class="grow"></b><button id="fClose">✕</button></div>
-  <div class="row" style="margin:8px 0"><span id="fInfo" class="mute grow"></span><button id="fSelAll">Select all</button></div>
+  <div class="row" style="margin:8px 0"><span id="fInfo" class="mute grow"></span><button id="fSelMode">☑ Select</button><button id="fSelAll" class="hide">Select all</button></div>
   <div id="fGrid" class="gal"></div>
-  <div class="row" style="margin-top:10px"><button id="fDelSel" class="bad grow" disabled>🗑 Delete selected</button><button id="fDelAll" class="bad">Delete all</button></div>
+  <div class="mute" id="fHint" style="margin-top:8px">Tap a file to open / play it.</div>
+  <div class="row" style="margin-top:8px"><button id="fDelSel" class="bad grow hide" disabled>🗑 Delete selected</button><button id="fDelAll" class="bad">Delete all</button></div>
 </div>
 
 <div id="viewer" class="ov hide">
@@ -1105,7 +1106,7 @@ async function loadGallery(){
 }
 $('#galRefresh').onclick = loadGallery;
 $('#gal').onclick = e => { const it = e.target.closest('[data-gi]'); if (it) openViewer(galItems[+it.dataset.gi]); };
-function openViewer(x){
+function openViewer(x, onDeleted){
   const u = fileUrl(x);
   $('#vName').textContent = x.filename;
   $('#vMedia').innerHTML = mediaHtml(u, x.filename, 'controls autoplay playsinline loop');
@@ -1114,8 +1115,8 @@ function openViewer(x){
   $('#vDel').onclick = async () => {
     if (!confirm('Delete this file from the PC?\n' + x.filename)) return;
     try {
-      await jpost('/api/files/delete', { dir: 'output', paths: [(x.subfolder ? x.subfolder + '/' : '') + x.filename] });
-      toast('Deleted'); closeViewer(); loadGallery().catch(() => {});
+      await jpost('/api/files/delete', { dir: x.type === 'input' ? 'input' : 'output', paths: [(x.subfolder ? x.subfolder + '/' : '') + x.filename] });
+      toast('Deleted'); closeViewer(); (onDeleted || (() => loadGallery().catch(() => {})))();
     } catch (e) { toast(e.message, 5000); }
   };
   $('#viewer').classList.remove('hide');
@@ -1125,14 +1126,24 @@ $('#vClose').onclick = closeViewer;
 
 // ---------------------------------------------------------------- files on the PC (input / output)
 const fmtBytes = b => b >= 2 ** 30 ? (b / 2 ** 30).toFixed(1) + ' GB' : b >= 2 ** 20 ? (b / 2 ** 20).toFixed(0) + ' MB' : Math.ceil(b / 1024) + ' KB';
-let fDir = null, fList = [], fSel = new Set();
+let fDir = null, fList = [], fSel = new Set(), fSelMode = false;
+function setSelMode(on){
+  fSelMode = on; if (!on) fSel = new Set();
+  $('#fSelMode').textContent = on ? '✓ Done' : '☑ Select';
+  $('#fSelAll').classList.toggle('hide', !on);
+  $('#fDelSel').classList.toggle('hide', !on);
+  $('#fHint').textContent = on ? 'Tap files to select them.' : 'Tap a file to open / play it.';
+  renderFiles();
+}
+$('#fSelMode').onclick = () => setSelMode(!fSelMode);
 async function loadFileCounts(){
   for (const d of ['input', 'output']) {
     try { const j = await jget('/api/files?dir=' + d); $(d === 'input' ? '#fcInput' : '#fcOutput').textContent = `(${j.count} · ${fmtBytes(j.bytes)})`; } catch {}
   }
 }
 async function openFiles(dir){
-  fDir = dir; fSel = new Set();
+  fDir = dir; fSel = new Set(); fSelMode = false; $('#fSelMode').textContent = '☑ Select';
+  $('#fSelAll').classList.add('hide'); $('#fDelSel').classList.add('hide'); $('#fHint').textContent = 'Tap a file to open / play it.';
   $('#fTitle').textContent = dir === 'input' ? '📥 Input files' : '📤 Output files';
   $('#filesOv').classList.remove('hide');
   $('#fGrid').innerHTML = '<div class="mute">Loading…</div>';
@@ -1161,6 +1172,10 @@ function renderFiles(){
 $('#fGrid').onclick = e => {
   const it = e.target.closest('[data-fi]'); if (!it) return;
   const p = fList[+it.dataset.fi].path;
+  if (!fSelMode) {
+    const i = p.lastIndexOf('/');
+    return openViewer({ filename: p.slice(i + 1), subfolder: i < 0 ? '' : p.slice(0, i), type: fDir }, () => { openFiles(fDir); loadFileCounts(); });
+  }
   fSel.has(p) ? fSel.delete(p) : fSel.add(p);
   it.classList.toggle('sel', fSel.has(p));
   $('#fDelSel').disabled = !fSel.size;
