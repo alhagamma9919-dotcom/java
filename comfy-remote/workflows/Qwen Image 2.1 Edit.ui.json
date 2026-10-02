@@ -252,5 +252,11 @@
         "text": "{prompt}. Change only that and keep everything else in the image exactly the same."
       }
     ]
+  },
+  "promptBoost": {
+    "label": "✨ Realism boost (real face, body shape & skin)",
+    "default": true,
+    "help": "Adds identity, natural body proportions and real-skin instructions to every prompt.",
+    "text": "Keep the person exactly the same: same face and recognizable identity, facial proportions, eye shape, nose, mouth, jawline, hairline, age, expression and skin tone, and the same natural body shape and proportions. Natural, unretouched skin with real texture, subtle pores, fine hairs and natural tonal variation, not airbrushed, not plastic, no beauty filter. Realistic anatomy and hands, lighting and shadows consistent with the original photo. Photorealistic, natural photo look."
   }
 }

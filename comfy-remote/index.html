@@ -543,7 +543,16 @@ $('#quickPrompt').addEventListener('input', e => {
 
 // ---------------------------------------------------------------- prompt templates (ui.promptTemplate)
 // Pick a template, type only your action; {prompt} in the template is replaced by it.
-const PT_SEL = '@ptpl', PT_ACTION = '@paction', PT_NONE = 'None (write full prompt)';
+const PT_SEL = '@ptpl', PT_ACTION = '@paction', PT_NONE = 'None (write full prompt)', PT_BOOST = '@pboost';
+const boostOn = () => !!ui.promptBoost && (vals[PT_BOOST] ?? ui.promptBoost.default ?? true);
+function finalPrompt(base){                                    // add the generic realism text once
+  base = String(base || '').trim();
+  if (!boostOn()) return base;
+  const b = ui.promptBoost.text;
+  return base.includes(b.slice(0, 60)) ? base : (base + ' ' + b).trim();
+}
+const boostHtml = () => ui.promptBoost ? `<label class="switch" style="margin:2px 0 8px"><input type="checkbox" data-pboost="1"${boostOn() ? ' checked' : ''}> <span>${esc(ui.promptBoost.label)}</span></label>
+  ${ui.promptBoost.help ? `<div class="mute" style="margin:-4px 0 8px">${esc(ui.promptBoost.help)}</div>` : ''}` : '';
 let ptEdit = null;                                              // null | 'edit' | 'new'
 const ptplField = () => ui.promptTemplate && fields.find(f => f.k === ui.promptTemplate.field);
 const ptplSel = () => vals[PT_SEL] ?? ui.promptTemplate.default ?? PT_NONE;
@@ -573,19 +582,20 @@ function renderPtpl(){
     return;
   }
   if (sel === PT_NONE || !t) {
-    box.innerHTML = chips + `<textarea data-k="${esc(f.k)}" rows="6" placeholder="Describe what you want…">${esc(cur(f))}</textarea>`;
+    box.innerHTML = chips + boostHtml() + `<textarea data-k="${esc(f.k)}" rows="6" placeholder="Describe what you want…">${esc(cur(f))}</textarea>`;
     return;
   }
-  box.innerHTML = chips + `<textarea data-paction="1" rows="3" placeholder="Only your action, e.g. she turns and waves quickly">${esc(vals[PT_ACTION] || '')}</textarea>
+  box.innerHTML = chips + boostHtml() + `<textarea data-paction="1" rows="3" placeholder="Only your action, e.g. she turns and waves quickly">${esc(vals[PT_ACTION] || '')}</textarea>
     ${t.help ? `<div class="mute" style="margin-top:6px">${esc(t.help)}</div>` : ''}
     <details style="margin-top:8px"><summary>Full prompt preview</summary><pre id="ptPrev"></pre></details>
     <div class="row" style="margin-top:8px"><button type="button" data-ptedit="1">✏ Edit template</button>
     ${t.custom ? `<button type="button" data-ptdel="1" class="bad">${(ui.promptTemplate.templates || []).some(x => x.name === sel) ? '↺ Restore default' : '🗑 Delete'}</button>` : ''}</div>`;
   updatePtplPreview();
 }
-function updatePtplPreview(){ const pre = $('#ptPrev'); if (pre && ptplActive()) pre.textContent = composePrompt(); }
+function updatePtplPreview(){ const pre = $('#ptPrev'); if (pre && ptplActive()) pre.textContent = finalPrompt(composePrompt()); }
 function saveCustom(list){ store.set('cr:ptpl:' + wfName, list); }
 $('#form').addEventListener('input', e => {
+  if (e.target.dataset.pboost) { vals[PT_BOOST] = e.target.checked; saveVals(); return updatePtplPreview(); }
   if (!e.target.dataset.paction) return;
   vals[PT_ACTION] = e.target.value; saveVals(); updatePtplPreview();
 });
@@ -869,7 +879,8 @@ async function run(){
         if (f.k in vals) for (const [i, k] of f.targets) p[i].inputs[k] = vals[f.k];
         for (const t of f.tpl || []) if (p[t.t[0]]) p[t.t[0]].inputs[t.t[1]] = t.tpl.replaceAll('{v}', cur(f));   // derived text, e.g. frame formula
       }
-      if (ptplActive()) for (const [i, k] of ptplField().targets) p[i].inputs[k] = composePrompt();
+      const pf = ptplField();
+      if (pf) for (const [i, k] of pf.targets) p[i].inputs[k] = finalPrompt(ptplActive() ? composePrompt() : cur(pf));
       applySlots(p);
       applyScale(p);
       saveVals();
