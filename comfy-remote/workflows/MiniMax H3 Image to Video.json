@@ -5,6 +5,7 @@
       "format": "auto",
       "format.codec": "auto",
       "codec": "auto",
+      "video-preview": "",
       "video": [
         "105:91",
         0
@@ -17,7 +18,7 @@
   },
   "114": {
     "inputs": {
-      "image": "OCCT-26914-102624.png"
+      "image": "ef3f63d5188ad672ea90b04ba4bdd0e9811e9d9c.jpg"
     },
     "class_type": "LoadImage",
     "_meta": {
@@ -27,7 +28,7 @@
   "119": {
     "inputs": {
       "upscale_method": "nearest-exact",
-      "megapixels": 0.2,
+      "megapixels": 0.4,
       "resolution_steps": 32,
       "image": [
         "114",
@@ -204,7 +205,7 @@
   },
   "105:91": {
     "inputs": {
-      "fps": 24,
+      "fps": 16,
       "bit_depth": 8,
       "color_space": "sRGB",
       "codec": "none",
@@ -224,7 +225,7 @@
   },
   "105:104": {
     "inputs": {
-      "prompt": "Editorial tech product film. The transparent gaming mouse from <Picture 1> in its original scene: a pitch-black studio void with a dark, subtle reflective surface, lit by dramatic duotone vibrant blue and warm neon orange rim lighting, deep soft shadow falloff into pure black. Monochromatic dark palette with electric blue and amber accents. Material motif: glowing internal metallic micro-components and glossy acrylic refractions. The environment is constant throughout.\nSHOT 1: The scene opens exactly on image 1, the mouse resting confidently on the dark surface; the blue and orange lights slowly pulse brighter, refracting deeply through the transparent acrylic shell as the camera executes a slow, deliberate push-in to reveal the intricate circuitry.\nSHOT 2: Cut to an extreme macro profile of the ridged scroll wheel and layered internal micro-components; the camera glides slowly along the side as a sharp beam of warm orange light sweeps across the metallic textures, contrasting perfectly against the deep blue ambient glow.\nSHOT 3: Cut to a low-angle beauty shot: the mouse levitates weightlessly a few centimeters above the dark reflective surface, rotating in a slow, precise orbit; the duotone lighting flares gently along the glassy transparent edges before fading slowly into a sleek silhouette.\nAudio: deep pulsing sub-bass room tone, sharp tactile mechanical clicks, a sweeping glassy whoosh on cuts, and a rising electronic swell that resolves to near-silence on the final fade. ",
+      "prompt": "SHE I",
       "width": [
         "120",
         0
@@ -257,7 +258,7 @@
   },
   "105:107": {
     "inputs": {
-      "expression": "max(5, round(a * 24)) + (5 - (max(5, round(a * 24)) % 17)) % 17",
+      "expression": "max(5, round(a * 16)) + (5 - (max(5, round(a * 16)) % 17)) % 17",
       "values.a": [
         "105:111",
         0
@@ -351,7 +352,7 @@
   },
   "105:126": {
     "inputs": {
-      "value": true
+      "value": false
     },
     "class_type": "PrimitiveBoolean",
     "_meta": {

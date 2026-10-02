@@ -1,5 +1,5 @@
 {
-  "note": "Image → video with sound, on your GPU. The video keeps your photo's shape automatically; pick the size in megapixels. Fast mode = 8 steps.",
+  "note": "Image → video with sound, on your GPU. Video keeps your photo's shape; pick size in megapixels. Faster: ⚡ Fast mode, 16 FPS, 5 s, 0.2–0.4 MP.",
   "fields": [
     {
       "t": [
@@ -34,6 +34,29 @@
       "max": 10,
       "step": 1,
       "group": "Video"
+    },
+    {
+      "t": [
+        [
+          "105:91",
+          "fps"
+        ]
+      ],
+      "label": "FPS (smoothness)",
+      "help": "Frames = seconds × FPS. 16 = faster, 24 = smoother motion.",
+      "min": 8,
+      "max": 30,
+      "step": 1,
+      "group": "Video",
+      "tpl": [
+        {
+          "t": [
+            "105:107",
+            "expression"
+          ],
+          "tpl": "max(5, round(a * {v})) + (5 - (max(5, round(a * {v})) % 17)) % 17"
+        }
+      ]
     },
     {
       "t": [
@@ -171,12 +194,12 @@
       "120"
     ],
     [
-      "105:91",
-      "fps"
-    ],
-    [
       "119",
       "resolution_steps"
+    ],
+    [
+      "92",
+      "video-preview"
     ]
   ],
   "inputScale": {

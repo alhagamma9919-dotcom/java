@@ -472,7 +472,7 @@ async function buildForm(){
     const kind = h.kind || classify(node, key, val, sp);
     if (!kind) continue;
     for (const [i, k] of t) taken.add(i + '|' + k);
-    fields.push({ k: id + '|' + key, targets: t, id, key, kind, title: titleOf(id), label: h.label, help: h.help,
+    fields.push({ k: id + '|' + key, targets: t, tpl: h.tpl || [], id, key, kind, title: titleOf(id), label: h.label, help: h.help,
       group: h.group || 'Settings', orig: val, sp, lim: { min: h.min, max: h.max, step: h.step } });
   }
   const curated = fields.length > 0;
@@ -794,6 +794,7 @@ async function run(){
           for (const el of $$(`[data-k="${CSS.escape(f.k)}"]`)) el.value = vals[f.k];
         }
         if (f.k in vals) for (const [i, k] of f.targets) p[i].inputs[k] = vals[f.k];
+        for (const t of f.tpl || []) if (p[t.t[0]]) p[t.t[0]].inputs[t.t[1]] = t.tpl.replaceAll('{v}', cur(f));   // derived text, e.g. frame formula
       }
       applySlots(p);
       applyScale(p);
