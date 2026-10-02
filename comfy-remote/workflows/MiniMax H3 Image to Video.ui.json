@@ -207,5 +207,31 @@
       "119",
       "megapixels"
     ]
+  },
+  "promptTemplate": {
+    "field": "105:104|prompt",
+    "default": "Fast action (3 s)",
+    "templates": [
+      {
+        "name": "Fast action (3 s)",
+        "help": "Best with Duration 3 + FPS 24 (= exactly 3 s). One quick action only.",
+        "text": "The subject from <Picture 1>, same look and same scene. Fast-paced, real-time speed, no slow motion.\nSHOT 1: Immediately from the first frame, {prompt}, in one quick, energetic motion, finishing by the end of the clip. Dynamic handheld camera that follows the movement, sharp and snappy.\nAudio: natural, crisp sounds that match the action, with a quick whoosh on the movement."
+      },
+      {
+        "name": "Person / talking",
+        "help": "Keeps face, outfit and scene. Describe what they do or say.",
+        "text": "The person from <Picture 1>, same face, hair, outfit and scene. Natural, realistic motion and expressions, real-time speed.\nSHOT 1: {prompt}\nAudio: clear natural voice and ambient sound that match the scene."
+      },
+      {
+        "name": "Cinematic",
+        "help": "Smooth, filmic movement. Good for 5 s.",
+        "text": "The subject from <Picture 1> in its original scene. Cinematic look, smooth camera movement, soft natural light, shallow depth of field. The environment stays constant.\nSHOT 1: {prompt}\nAudio: subtle ambient room tone, matching sound effects and a gentle music swell."
+      },
+      {
+        "name": "Product ad",
+        "help": "Premium product shot with reveal.",
+        "text": "Editorial product film. The product from <Picture 1> with its exact original design, premium studio lighting, dark background with soft reflections.\nSHOT 1: {prompt}, with a deliberate camera push-in that reveals the details.\nAudio: deep subtle bass room tone, crisp tactile clicks and a soft whoosh."
+      }
+    ]
   }
 }

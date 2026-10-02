@@ -214,5 +214,31 @@
       ]
     }
   },
-  "inputScale": true
+  "inputScale": true,
+  "promptTemplate": {
+    "field": "459:484|on_false",
+    "default": "None (write full prompt)",
+    "templates": [
+      {
+        "name": "Outfit swap",
+        "help": "Photo 1 = person, Photo 2 = clothes. Extra details optional, e.g. 'tuck the shirt in.'",
+        "text": "Replace the clothing of the person in <image1> with the outfit from <image2>. {prompt} Keep the face, hair, pose, body shape and background exactly the same."
+      },
+      {
+        "name": "Change background",
+        "help": "Type the new background, e.g. 'a sunny beach at sunset'.",
+        "text": "Change only the background of the image to {prompt}. Keep the person or subject, their pose, lighting and the composition exactly the same."
+      },
+      {
+        "name": "Change style",
+        "help": "Type a style, e.g. 'Studio Ghibli anime' or 'oil painting'.",
+        "text": "Redraw the whole image in the style of {prompt}. Keep the composition, the subject's identity and the layout the same."
+      },
+      {
+        "name": "Small edit",
+        "help": "Type one change, e.g. 'make the shirt red'.",
+        "text": "{prompt}. Change only that and keep everything else in the image exactly the same."
+      }
+    ]
+  }
 }

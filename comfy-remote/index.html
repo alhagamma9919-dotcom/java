@@ -515,6 +515,7 @@ async function buildForm(){
   showFormMsg(null);
   for (const f of fields) if (f.kind === 'image') showInputPreview(f);
   if (S) renderSlots();
+  if (ui.promptTemplate) renderPtpl();
   if (ui.inputScale) renderScale();
   $('#runBtn').disabled = pcState !== 'running';
   updateQuick();
@@ -526,13 +527,84 @@ function updateQuick(){
   const f = mainPrompt();
   $('#quickCard').classList.toggle('hide', !f);
   if (!f) return;
-  $('#quickPrompt').value = cur(f);
-  $('#quickWf').textContent = wfName || '';
+  $('#quickPrompt').value = ptplActive() ? (vals[PT_ACTION] || '') : cur(f);
+  $('#quickWf').textContent = (wfName || '') + (ptplActive() ? ' · ' + ptplSel() : '');
 }
 $('#quickPrompt').addEventListener('input', e => {
   const f = mainPrompt(); if (!f) return;
+  if (ptplActive()) {
+    vals[PT_ACTION] = e.target.value; saveVals();
+    const el = document.querySelector('#form [data-paction]'); if (el) el.value = e.target.value;
+    return updatePtplPreview();
+  }
   vals[f.k] = e.target.value; saveVals();
   const el = document.querySelector(`#form [data-k="${CSS.escape(f.k)}"]`); if (el) el.value = e.target.value;
+});
+
+// ---------------------------------------------------------------- prompt templates (ui.promptTemplate)
+// Pick a template, type only your action; {prompt} in the template is replaced by it.
+const PT_SEL = '@ptpl', PT_ACTION = '@paction', PT_NONE = 'None (write full prompt)';
+let ptEdit = null;                                              // null | 'edit' | 'new'
+const ptplField = () => ui.promptTemplate && fields.find(f => f.k === ui.promptTemplate.field);
+const ptplSel = () => vals[PT_SEL] ?? ui.promptTemplate.default ?? PT_NONE;
+const ptplActive = () => !!(ptplField() && ptplSel() !== PT_NONE && ptplFind(ptplSel()));
+function ptplList(){
+  const map = new Map((ui.promptTemplate.templates || []).map(t => [t.name, { ...t }]));
+  for (const c of store.get('cr:ptpl:' + wfName, [])) map.set(c.name, { ...c, custom: true });
+  return [...map.values()];
+}
+const ptplFind = name => ptplList().find(t => t.name === name);
+function composePrompt(){
+  const t = ptplFind(ptplSel()), a = (vals[PT_ACTION] || '').trim();
+  return t.text.includes('{prompt}') ? t.text.replaceAll('{prompt}', a) : t.text + '\n' + a;
+}
+function renderPtpl(){
+  const box = $('#ptplBox'), f = ptplField(); if (!box || !f) return;
+  const sel = ptplSel(), list = ptplList(), t = ptplFind(sel);
+  const chips = `<div class="chips" style="margin-bottom:8px">${[PT_NONE, ...list.map(x => x.name)].map(n =>
+    `<button type="button" data-ptsel="${esc(n)}" class="${n === sel ? 'on' : ''}">${esc(n)}</button>`).join('')}
+    <button type="button" data-ptnew="1" title="New template">＋</button></div>`;
+  if (ptEdit) {
+    const text = ptEdit === 'edit' && t ? t.text : 'The subject from <Picture 1>.\nSHOT 1: {prompt}\nAudio: ';
+    box.innerHTML = chips + `<div class="mute" style="margin-bottom:6px">${ptEdit === 'new' ? 'New template' : 'Edit “' + esc(sel) + '”'} · put <b>{prompt}</b> where your action goes</div>
+      ${ptEdit === 'new' ? '<input type="text" id="ptName" placeholder="Template name" style="margin-bottom:6px">' : ''}
+      <textarea id="ptText" rows="8">${esc(text)}</textarea>
+      <div class="row" style="margin-top:8px"><button type="button" data-ptsave="1" class="pri grow">Save template</button><button type="button" data-ptcancel="1">Cancel</button></div>`;
+    return;
+  }
+  if (sel === PT_NONE || !t) {
+    box.innerHTML = chips + `<textarea data-k="${esc(f.k)}" rows="6" placeholder="Describe what you want…">${esc(cur(f))}</textarea>`;
+    return;
+  }
+  box.innerHTML = chips + `<textarea data-paction="1" rows="3" placeholder="Only your action, e.g. she turns and waves quickly">${esc(vals[PT_ACTION] || '')}</textarea>
+    ${t.help ? `<div class="mute" style="margin-top:6px">${esc(t.help)}</div>` : ''}
+    <details style="margin-top:8px"><summary>Full prompt preview</summary><pre id="ptPrev"></pre></details>
+    <div class="row" style="margin-top:8px"><button type="button" data-ptedit="1">✏ Edit template</button>
+    ${t.custom ? `<button type="button" data-ptdel="1" class="bad">${(ui.promptTemplate.templates || []).some(x => x.name === sel) ? '↺ Restore default' : '🗑 Delete'}</button>` : ''}</div>`;
+  updatePtplPreview();
+}
+function updatePtplPreview(){ const pre = $('#ptPrev'); if (pre && ptplActive()) pre.textContent = composePrompt(); }
+function saveCustom(list){ store.set('cr:ptpl:' + wfName, list); }
+$('#form').addEventListener('input', e => {
+  if (!e.target.dataset.paction) return;
+  vals[PT_ACTION] = e.target.value; saveVals(); updatePtplPreview();
+});
+$('#form').addEventListener('click', e => {
+  const b = e.target.closest('[data-ptsel],[data-ptnew],[data-ptedit],[data-ptsave],[data-ptcancel],[data-ptdel]'); if (!b) return;
+  const custom = store.get('cr:ptpl:' + wfName, []);
+  if (b.dataset.ptsel !== undefined) { vals[PT_SEL] = b.dataset.ptsel; saveVals(); ptEdit = null; }
+  else if (b.dataset.ptnew) ptEdit = 'new';
+  else if (b.dataset.ptedit) ptEdit = 'edit';
+  else if (b.dataset.ptcancel) ptEdit = null;
+  else if (b.dataset.ptdel) { saveCustom(custom.filter(c => c.name !== ptplSel())); if (!ptplFind(ptplSel())) vals[PT_SEL] = PT_NONE; saveVals(); }
+  else if (b.dataset.ptsave) {
+    const text = $('#ptText').value, name = ptEdit === 'new' ? ($('#ptName').value || '').trim() : ptplSel();
+    if (!name || name === PT_NONE) return toast('Give the template a name');
+    if (!text.includes('{prompt}')) toast('Tip: add {prompt} where your action should go', 4000);
+    saveCustom([...custom.filter(c => c.name !== name), { name, text }]);
+    vals[PT_SEL] = name; saveVals(); ptEdit = null; toast('Template saved');
+  }
+  renderPtpl();
 });
 $('#quickRun').onclick = () => run();
 
@@ -674,6 +746,7 @@ function fieldHtml(f){
           <input type="file" accept="image/*" class="hide" data-up="${k}">
         </div></div>`;
     case 'prompt':
+      if (ui.promptTemplate && f.k === ui.promptTemplate.field) return label + '<div id="ptplBox"></div>';
       return label + `<textarea data-k="${k}" rows="4" placeholder="Describe what you want…">${esc(v)}</textarea>`;
     case 'seed': {
       const m = seedMode[f.k] || 'random';
@@ -796,6 +869,7 @@ async function run(){
         if (f.k in vals) for (const [i, k] of f.targets) p[i].inputs[k] = vals[f.k];
         for (const t of f.tpl || []) if (p[t.t[0]]) p[t.t[0]].inputs[t.t[1]] = t.tpl.replaceAll('{v}', cur(f));   // derived text, e.g. frame formula
       }
+      if (ptplActive()) for (const [i, k] of ptplField().targets) p[i].inputs[k] = composePrompt();
       applySlots(p);
       applyScale(p);
       saveVals();
