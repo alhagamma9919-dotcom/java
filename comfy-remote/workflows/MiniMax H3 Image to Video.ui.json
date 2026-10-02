@@ -233,5 +233,11 @@
         "text": "Editorial product film. The product from <Picture 1> with its exact original design, premium studio lighting, dark background with soft reflections.\nSHOT 1: {prompt}, with a deliberate camera push-in that reveals the details.\nAudio: deep subtle bass room tone, crisp tactile clicks and a soft whoosh."
       }
     ]
+  },
+  "promptBoost": {
+    "label": "✨ Realism boost (real face, body, skin & motion)",
+    "default": true,
+    "help": "Adds identity, natural body, real skin and realistic-motion instructions to every video prompt. Turn off for cartoon/stylized videos.",
+    "text": "Keep the person or subject from <Picture 1> exactly the same throughout: same face and recognizable identity, facial proportions, hair, skin tone, natural body shape and proportions, and outfit. Natural, unretouched skin with real texture, not plastic or airbrushed. Realistic, natural motion with real-world physics and believable weight; stable face and body with no morphing, warping, melting or flicker; correct hands and fingers. Lighting and colors consistent with the first frame. Photorealistic, like real camera footage."
   }
 }
