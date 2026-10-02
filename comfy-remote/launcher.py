@@ -346,6 +346,65 @@ async def wf_delete(request):
     return web.json_response({"ok": True})
 
 
+# ---------------------------------------------------------------- input / output files
+FILE_DIRS = ("input", "output")
+
+
+def _files_root(kind):
+    if kind not in FILE_DIRS:
+        raise web.HTTPBadRequest(text="dir must be input or output")
+    return (Path(CFG["comfy_dir"]) / kind).resolve()
+
+
+def _list_files(root):
+    out = []
+    if root.is_dir():
+        for p in root.rglob("*"):
+            if p.is_file() and not p.name.startswith("."):
+                st = p.stat()
+                out.append({"path": p.relative_to(root).as_posix(), "size": st.st_size, "mtime": int(st.st_mtime)})
+    out.sort(key=lambda x: -x["mtime"])
+    return out
+
+
+def _safe_file(root, rel):
+    """Only files inside ComfyUI's input/output folder; no '..' tricks."""
+    p = (root / rel).resolve()
+    if root not in p.parents or not p.is_file():
+        raise web.HTTPBadRequest(text=f"Invalid file: {rel}")
+    return p
+
+
+async def files_list(request):
+    kind = request.query.get("dir", "")
+    files = await asyncio.get_running_loop().run_in_executor(None, _list_files, _files_root(kind))
+    return web.json_response({"dir": kind, "count": len(files), "bytes": sum(f["size"] for f in files), "files": files[:1000]})
+
+
+async def files_delete(request):
+    body = await request.json()
+    root = _files_root(body.get("dir", ""))
+
+    def work():
+        if body.get("all"):
+            targets = [root / f["path"] for f in _list_files(root)]
+        else:
+            targets = [_safe_file(root, rel) for rel in body.get("paths", [])[:5000]]
+        n = freed = 0
+        for p in targets:
+            try:
+                size = p.stat().st_size
+                p.unlink()
+                n += 1
+                freed += size
+            except OSError:
+                pass
+        return n, freed
+
+    n, freed = await asyncio.get_running_loop().run_in_executor(None, work)
+    return web.json_response({"deleted": n, "freed": freed})
+
+
 # ---------------------------------------------------------------- ComfyUI proxy
 HOP = {"connection", "keep-alive", "transfer-encoding", "content-encoding", "content-length", "upgrade"}
 
@@ -440,6 +499,8 @@ def make_app():
         web.get("/api/workflows/{name}/ui", wf_ui),
         web.post("/api/workflows/{name}", wf_save),
         web.delete("/api/workflows/{name}", wf_delete),
+        web.get("/api/files", files_list),
+        web.post("/api/files/delete", files_delete),
         web.route("*", "/comfy/{tail:.*}", proxy),
     ])
     return app

@@ -102,6 +102,10 @@ pre{white-space:pre-wrap;word-break:break-all;font:12px/1.4 ui-monospace,Consola
 #login input{text-align:center;font-size:24px;letter-spacing:.3em;margin:14px 0}
 #toast{position:fixed;left:50%;bottom:calc(96px + env(safe-area-inset-bottom));transform:translateX(-50%);z-index:60;background:var(--card2);border:1px solid var(--line);border-radius:10px;padding:10px 14px;font-size:14px;max-width:90vw;opacity:0;transition:opacity .2s;pointer-events:none}
 #toast.show{opacity:1}
+#filesOv #fGrid{flex:1;min-height:0;overflow:auto;align-content:start}
+.it.sel{outline:3px solid var(--bad);outline-offset:-3px}
+.it.sel::after{content:"✓";position:absolute;top:4px;left:6px;background:var(--bad);color:#fff;border-radius:50%;width:20px;height:20px;text-align:center;font-size:13px;line-height:20px}
+.it .fn{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:4px;font-size:11px;color:var(--mute);word-break:break-all;text-align:center}
 </style>
 </head>
 <body>
@@ -196,6 +200,13 @@ pre{white-space:pre-wrap;word-break:break-all;font:12px/1.4 ui-monospace,Consola
       <div class="row"><h3 class="grow" style="margin:0">ComfyUI log</h3><label class="switch mute"><input id="logAuto" type="checkbox" checked> live</label><button id="logBtn">↻</button></div>
       <pre id="log">…</pre>
     </div>
+    <div class="card">
+      <h3>Files on PC</h3>
+      <div class="row" style="margin-top:8px">
+        <button class="grow" data-files="input">📥 Inputs <span id="fcInput" class="mute"></span></button>
+        <button class="grow" data-files="output">📤 Outputs <span id="fcOutput" class="mute"></span></button>
+      </div>
+    </div>
     <div class="card mute" id="apiKeyInfo"></div>
   </section>
 </main>
@@ -210,10 +221,17 @@ pre{white-space:pre-wrap;word-break:break-all;font:12px/1.4 ui-monospace,Consola
 </div></div>
 <input id="slotFile" type="file" accept="image/*" class="hide">
 
+<div id="filesOv" class="ov hide">
+  <div class="row"><b id="fTitle" class="grow"></b><button id="fClose">✕</button></div>
+  <div class="row" style="margin:8px 0"><span id="fInfo" class="mute grow"></span><button id="fSelAll">Select all</button></div>
+  <div id="fGrid" class="gal"></div>
+  <div class="row" style="margin-top:10px"><button id="fDelSel" class="bad grow" disabled>🗑 Delete selected</button><button id="fDelAll" class="bad">Delete all</button></div>
+</div>
+
 <div id="viewer" class="ov hide">
   <div class="row"><span id="vName" class="mute grow" style="overflow:hidden;text-overflow:ellipsis"></span><button id="vClose">✕</button></div>
   <div class="media" id="vMedia"></div>
-  <div class="acts"><a id="vSave" download><button style="width:100%">⬇ Save</button></a><button id="vReuse">↺ Use as input</button></div>
+  <div class="acts"><a id="vSave" download><button style="width:100%">⬇ Save</button></a><button id="vReuse">↺ Use as input</button><button id="vDel" class="bad" style="flex:0 0 auto">🗑</button></div>
 </div>
 
 <div id="login" class="ov hide">
@@ -984,10 +1002,74 @@ function openViewer(x){
   $('#vMedia').innerHTML = mediaHtml(u, x.filename, 'controls autoplay playsinline loop');
   $('#vSave').href = u; $('#vSave').download = x.filename;
   const r = $('#vReuse'); r.dataset.reuse = u; r.dataset.fn = x.filename; r.classList.toggle('hide', isVideo(x.filename));
+  $('#vDel').onclick = async () => {
+    if (!confirm('Delete this file from the PC?\n' + x.filename)) return;
+    try {
+      await jpost('/api/files/delete', { dir: 'output', paths: [(x.subfolder ? x.subfolder + '/' : '') + x.filename] });
+      toast('Deleted'); closeViewer(); loadGallery().catch(() => {});
+    } catch (e) { toast(e.message, 5000); }
+  };
   $('#viewer').classList.remove('hide');
 }
 function closeViewer(){ $('#viewer').classList.add('hide'); $('#vMedia').innerHTML = ''; }
 $('#vClose').onclick = closeViewer;
+
+// ---------------------------------------------------------------- files on the PC (input / output)
+const fmtBytes = b => b >= 2 ** 30 ? (b / 2 ** 30).toFixed(1) + ' GB' : b >= 2 ** 20 ? (b / 2 ** 20).toFixed(0) + ' MB' : Math.ceil(b / 1024) + ' KB';
+let fDir = null, fList = [], fSel = new Set();
+async function loadFileCounts(){
+  for (const d of ['input', 'output']) {
+    try { const j = await jget('/api/files?dir=' + d); $(d === 'input' ? '#fcInput' : '#fcOutput').textContent = `(${j.count} · ${fmtBytes(j.bytes)})`; } catch {}
+  }
+}
+async function openFiles(dir){
+  fDir = dir; fSel = new Set();
+  $('#fTitle').textContent = dir === 'input' ? '📥 Input files' : '📤 Output files';
+  $('#filesOv').classList.remove('hide');
+  $('#fGrid').innerHTML = '<div class="mute">Loading…</div>';
+  try {
+    const j = await jget('/api/files?dir=' + dir);
+    fList = j.files;
+    $('#fInfo').textContent = `${j.count} files · ${fmtBytes(j.bytes)}` + (j.count > j.files.length ? ` (showing newest ${j.files.length})` : '');
+    renderFiles();
+  } catch (e) { $('#fGrid').innerHTML = `<div class="err">${esc(e.message)}</div>`; }
+}
+function renderFiles(){
+  const thumb = f => {
+    const i = f.path.lastIndexOf('/');
+    const u = C + '/view?' + new URLSearchParams({ filename: f.path.slice(i + 1), subfolder: i < 0 ? '' : f.path.slice(0, i), type: fDir });
+    if (pcState === 'running' && /\.(png|jpe?g|webp|gif)$/i.test(f.path)) return `<img src="${u}" loading="lazy" alt="" onerror="this.remove()">`;
+    if (pcState === 'running' && isVideo(f.path)) return `<video src="${u}#t=0.1" preload="metadata" muted playsinline></video><span class="play">▶</span>`;
+    return '';
+  };
+  $('#fGrid').innerHTML = fList.length ? fList.slice(0, 400).map((f, i) =>
+    `<div class="it${fSel.has(f.path) ? ' sel' : ''}" data-fi="${i}"><span class="fn">${esc(f.path)}</span>${thumb(f)}</div>`).join('')
+    : '<div class="mute">No files</div>';
+  $('#fDelSel').disabled = !fSel.size;
+  $('#fDelSel').textContent = fSel.size ? `🗑 Delete selected (${fSel.size})` : '🗑 Delete selected';
+  $('#fSelAll').textContent = fSel.size && fSel.size === fList.length ? 'Select none' : 'Select all';
+}
+$('#fGrid').onclick = e => {
+  const it = e.target.closest('[data-fi]'); if (!it) return;
+  const p = fList[+it.dataset.fi].path;
+  fSel.has(p) ? fSel.delete(p) : fSel.add(p);
+  it.classList.toggle('sel', fSel.has(p));
+  $('#fDelSel').disabled = !fSel.size;
+  $('#fDelSel').textContent = fSel.size ? `🗑 Delete selected (${fSel.size})` : '🗑 Delete selected';
+};
+$('#fSelAll').onclick = () => { fSel = fSel.size === fList.length ? new Set() : new Set(fList.map(f => f.path)); renderFiles(); };
+async function deleteFiles(body, what){
+  if (!confirm(`Permanently delete ${what} from the PC (${fDir} folder)?`)) return;
+  try {
+    const r = await jpost('/api/files/delete', { dir: fDir, ...body });
+    toast(`Deleted ${r.deleted} file(s), freed ${fmtBytes(r.freed)}`);
+    await openFiles(fDir); loadFileCounts();
+  } catch (e) { toast(e.message, 5000); }
+}
+$('#fDelSel').onclick = () => deleteFiles({ paths: [...fSel] }, `${fSel.size} file(s)`);
+$('#fDelAll').onclick = () => deleteFiles({ all: true }, `ALL ${fList.length} file(s)`);
+$('#fClose').onclick = () => { $('#filesOv').classList.add('hide'); $('#fGrid').innerHTML = ''; };
+for (const b of $$('[data-files]')) b.onclick = () => openFiles(b.dataset.files);
 
 // ---------------------------------------------------------------- tabs / boot
 let tab = 'create';
@@ -996,7 +1078,7 @@ function showTab(t){
   for (const b of $$('.tabs button')) b.classList.toggle('on', b.dataset.tab === t);
   for (const s of ['create', 'result', 'gallery', 'pc']) $('#tab-' + s).classList.toggle('hide', s !== t);
   if (t === 'gallery') loadGallery().catch(() => {});
-  if (t === 'pc') loadLog();
+  if (t === 'pc') { loadLog(); loadFileCounts(); }
   if (t === 'result') { loadQueue(); updateQuick(); }
 }
 for (const b of $$('.tabs button')) b.onclick = () => showTab(b.dataset.tab);
