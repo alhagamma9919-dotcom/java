@@ -238,7 +238,7 @@
   "459:484": {
     "inputs": {
       "switch": false,
-      "on_false": "Replace costumes for the character",
+      "on_false": "",
       "on_true": [
         "459:500",
         0
@@ -278,7 +278,7 @@
   },
   "459:500": {
     "inputs": {
-      "prompt": "Replace costumes for the character",
+      "prompt": "",
       "max_length": 16256,
       "sampling_mode": "on",
       "sampling_mode.temperature": 1,

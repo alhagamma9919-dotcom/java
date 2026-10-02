@@ -102,6 +102,7 @@ pre{white-space:pre-wrap;word-break:break-all;font:12px/1.4 ui-monospace,Consola
 #login input{text-align:center;font-size:24px;letter-spacing:.3em;margin:14px 0}
 #toast{position:fixed;left:50%;bottom:calc(96px + env(safe-area-inset-bottom));transform:translateX(-50%);z-index:60;background:var(--card2);border:1px solid var(--line);border-radius:10px;padding:10px 14px;font-size:14px;max-width:90vw;opacity:0;transition:opacity .2s;pointer-events:none}
 #toast.show{opacity:1}
+.tagchip img{width:22px;height:22px;object-fit:cover;border-radius:4px;vertical-align:middle;margin-right:5px}
 #filesOv #fGrid{flex:1;min-height:0;overflow:auto;align-content:start}
 .it.sel{outline:3px solid var(--bad);outline-offset:-3px}
 .it.sel::after{content:"✓";position:absolute;top:4px;left:6px;background:var(--bad);color:#fff;border-radius:50%;width:20px;height:20px;text-align:center;font-size:13px;line-height:20px}
@@ -548,8 +549,9 @@ const boostOn = () => !!ui.promptBoost && (vals[PT_BOOST] ?? ui.promptBoost.defa
 function finalPrompt(base){                                    // add the generic realism text once
   base = String(base || '').trim();
   if (!boostOn()) return base;
-  const b = ui.promptBoost.text;
-  return base.includes(b.slice(0, 60)) ? base : (base + ' ' + b).trim();
+  let b = ui.promptBoost.text;
+  if (ui.imageSlots && !slotList().length) b = b.replaceAll(' from <image1>', '').replaceAll(' in <image1>', '');
+  return base.includes(b.slice(0, 40)) ? base : (base + ' ' + b).trim();
 }
 const boostHtml = () => ui.promptBoost ? `<label class="switch" style="margin:2px 0 8px"><input type="checkbox" data-pboost="1"${boostOn() ? ' checked' : ''}> <span>${esc(ui.promptBoost.label)}</span></label>
   ${ui.promptBoost.help ? `<div class="mute" style="margin:-4px 0 8px">${esc(ui.promptBoost.help)}</div>` : ''}` : '';
@@ -578,20 +580,41 @@ function renderPtpl(){
     box.innerHTML = chips + `<div class="mute" style="margin-bottom:6px">${ptEdit === 'new' ? 'New template' : 'Edit “' + esc(sel) + '”'} · put <b>{prompt}</b> where your action goes</div>
       ${ptEdit === 'new' ? '<input type="text" id="ptName" placeholder="Template name" style="margin-bottom:6px">' : ''}
       <textarea id="ptText" rows="8">${esc(text)}</textarea>
+      <div id="ptTags"></div>
       <div class="row" style="margin-top:8px"><button type="button" data-ptsave="1" class="pri grow">Save template</button><button type="button" data-ptcancel="1">Cancel</button></div>`;
-    return;
+    return renderTags();
   }
   if (sel === PT_NONE || !t) {
-    box.innerHTML = chips + boostHtml() + `<textarea data-k="${esc(f.k)}" rows="6" placeholder="Describe what you want…">${esc(cur(f))}</textarea>`;
-    return;
+    box.innerHTML = chips + boostHtml() + `<textarea data-k="${esc(f.k)}" rows="6" placeholder="Write your own prompt…">${esc(cur(f))}</textarea><div id="ptTags"></div>`;
+    return renderTags();
   }
   box.innerHTML = chips + boostHtml() + `<textarea data-paction="1" rows="3" placeholder="Only your action, e.g. she turns and waves quickly">${esc(vals[PT_ACTION] || '')}</textarea>
     ${t.help ? `<div class="mute" style="margin-top:6px">${esc(t.help)}</div>` : ''}
+    <div id="ptTags"></div>
     <details style="margin-top:8px"><summary>Full prompt preview</summary><pre id="ptPrev"></pre></details>
     <div class="row" style="margin-top:8px"><button type="button" data-ptedit="1">✏ Edit template</button>
     ${t.custom ? `<button type="button" data-ptdel="1" class="bad">${(ui.promptTemplate.templates || []).some(x => x.name === sel) ? '↺ Restore default' : '🗑 Delete'}</button>` : ''}</div>`;
   updatePtplPreview();
+  renderTags();
 }
+// Tap-to-insert <image1>, <image2>… for the selected photos
+let lastTA = null;
+function renderTags(){
+  const box = $('#ptTags'); if (!box) return;
+  const list = ui.imageSlots ? slotList() : [];
+  box.innerHTML = list.length ? `<div class="mute" style="margin:8px 0 4px">Tap to insert a photo tag:</div><div class="chips">${list.map((n, i) =>
+    `<button type="button" class="tagchip" data-tag="&lt;image${i + 1}&gt;"><img src="${viewUrl(n, 'input')}" alt="">&lt;image${i + 1}&gt;</button>`).join('')}</div>` : '';
+}
+$('#form').addEventListener('focusin', e => { if (e.target.tagName === 'TEXTAREA' && e.target.closest('#ptplBox')) lastTA = e.target; });
+$('#form').addEventListener('click', e => {
+  const b = e.target.closest('[data-tag]'); if (!b) return;
+  const ta = lastTA && document.body.contains(lastTA) ? lastTA : $('#ptplBox textarea'); if (!ta) return;
+  const s = ta.selectionStart ?? ta.value.length, en = ta.selectionEnd ?? s;
+  const before = s > 0 && !/\s$/.test(ta.value.slice(0, s)) ? ' ' : '';
+  ta.setRangeText(before + b.dataset.tag + ' ', s, en, 'end');
+  ta.focus();
+  ta.dispatchEvent(new Event('input', { bubbles: true }));
+});
 function updatePtplPreview(){ const pre = $('#ptPrev'); if (pre && ptplActive()) pre.textContent = finalPrompt(composePrompt()); }
 function saveCustom(list){ store.set('cr:ptpl:' + wfName, list); }
 $('#form').addEventListener('input', e => {
@@ -632,7 +655,7 @@ function renderSlots(){
     ${list.length ? '' : `<div class="mute">${esc(S.emptyNote || 'No photos: text-to-image mode.')}</div>`}
     <div class="slots">${list.map((name, i) => `<div class="slot">
       <img src="${viewUrl(name, 'input')}" alt="" loading="lazy">
-      <div class="cap">Photo ${i + 1} · ${esc(lab(i))}</div>
+      <div class="cap">Photo ${i + 1} · &lt;image${i + 1}&gt; · ${esc(lab(i))}</div>
       <div class="row">
         <button data-slot-change="${i}" class="grow">Change</button>
         ${i ? `<button data-slot-up="${i}" title="Make it Photo ${i}">⬆</button>` : ''}
@@ -641,7 +664,7 @@ function renderSlots(){
       ${list.length < S.max ? '<div class="slot add" data-slot-add="1">＋ Add photo</div>' : ''}
     </div>`;
 }
-function setSlots(list){ vals[SLOT_KEY] = list; saveVals(); renderSlots(); }
+function setSlots(list){ vals[SLOT_KEY] = list; saveVals(); renderSlots(); renderTags(); }
 let slotTarget = null;
 $('#form').addEventListener('click', e => {
   const t = e.target.closest('[data-slot-add],[data-slot-change],[data-slot-del],[data-slot-up]'); if (!t) return;

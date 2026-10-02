@@ -1,5 +1,5 @@
 {
-  "note": "Photo 1 is edited; other photos are references (clothes, objects, style, people). Add up to 5, or remove all for text-to-image.",
+  "note": "Photo 1 = <image1> is edited; other photos are references (<image2>, <image3>…). Tap a tag button to put it in your prompt. Up to 10 photos, or none for text-to-image.",
   "fields": [
     {
       "t": [
@@ -176,9 +176,14 @@
       "470",
       "475"
     ],
-    "max": 5,
+    "max": 10,
     "labels": [
       "to edit",
+      "reference",
+      "reference",
+      "reference",
+      "reference",
+      "reference",
       "reference",
       "reference",
       "reference",
@@ -223,18 +228,18 @@
     "templates": [
       {
         "name": "Realistic person",
-        "help": "Any edit on a person, while keeping their real face, body shape and skin. Type only the change, e.g. 'put her in a red summer dress'.",
-        "text": "{prompt}. Keep the person exactly the same: same face and recognizable identity, facial proportions, eye shape, nose, mouth, jawline, hairline, age, expression and skin tone, and the same natural body shape and proportions. Natural, unretouched skin with real texture, subtle pores, fine hairs and natural tonal variation, not airbrushed, not plastic, no beauty filter. Realistic anatomy and hands, lighting and shadows consistent with the original photo. Photorealistic, natural photo look."
+        "help": "Any edit on the person in <image1>. Type only the change, e.g. 'put her in the dress from <image2>'.",
+        "text": "{prompt}. Keep the person from <image1> exactly the same: same face and recognizable identity, facial proportions, eye shape, nose, mouth, jawline, hairline, age, expression and skin tone, and the same natural body shape and proportions. Natural, unretouched skin with real texture, subtle pores, fine hairs and natural tonal variation, not airbrushed, not plastic, no beauty filter. Realistic anatomy and hands, lighting and shadows consistent with the original photo. Photorealistic, natural photo look."
       },
       {
         "name": "Outfit swap",
         "help": "Photo 1 = person, Photo 2 = clothes. Extra details optional, e.g. 'tuck the shirt in'.",
-        "text": "Replace the clothing of the person in <image1> with the outfit from <image2>, fitted naturally to their real body with realistic folds and fabric. {prompt} Keep the pose and background unchanged. Keep the person exactly the same: same face and recognizable identity, facial proportions, eye shape, nose, mouth, jawline, hairline, age, expression and skin tone, and the same natural body shape and proportions. Natural, unretouched skin with real texture, subtle pores, fine hairs and natural tonal variation, not airbrushed, not plastic, no beauty filter. Realistic anatomy and hands, lighting and shadows consistent with the original photo. Photorealistic, natural photo look."
+        "text": "Replace the clothing of the person in <image1> with the outfit from <image2>, fitted naturally to their real body with realistic folds and fabric. {prompt} Keep the pose and background unchanged. Keep the person from <image1> exactly the same: same face and recognizable identity, facial proportions, eye shape, nose, mouth, jawline, hairline, age, expression and skin tone, and the same natural body shape and proportions. Natural, unretouched skin with real texture, subtle pores, fine hairs and natural tonal variation, not airbrushed, not plastic, no beauty filter. Realistic anatomy and hands, lighting and shadows consistent with the original photo. Photorealistic, natural photo look."
       },
       {
         "name": "Change background",
         "help": "Type the new background, e.g. 'a sunny beach at sunset'.",
-        "text": "Change only the background of the image to {prompt}, with lighting and shadows on the person adjusted to match the new scene. Keep the pose and framing unchanged. Keep the person exactly the same: same face and recognizable identity, facial proportions, eye shape, nose, mouth, jawline, hairline, age, expression and skin tone, and the same natural body shape and proportions. Natural, unretouched skin with real texture, subtle pores, fine hairs and natural tonal variation, not airbrushed, not plastic, no beauty filter. Realistic anatomy and hands, lighting and shadows consistent with the original photo. Photorealistic, natural photo look."
+        "text": "Change only the background of <image1> to {prompt}, with lighting and shadows on the person adjusted to match the new scene. Keep the pose and framing unchanged. Keep the person from <image1> exactly the same: same face and recognizable identity, facial proportions, eye shape, nose, mouth, jawline, hairline, age, expression and skin tone, and the same natural body shape and proportions. Natural, unretouched skin with real texture, subtle pores, fine hairs and natural tonal variation, not airbrushed, not plastic, no beauty filter. Realistic anatomy and hands, lighting and shadows consistent with the original photo. Photorealistic, natural photo look."
       },
       {
         "name": "Natural skin (remove beauty filter)",
@@ -249,7 +254,7 @@
       {
         "name": "Small edit",
         "help": "Type one change, e.g. 'make the shirt red'.",
-        "text": "{prompt}. Change only that and keep everything else in the image exactly the same."
+        "text": "In <image1>: {prompt}. Change only that and keep everything else exactly the same."
       }
     ]
   },
@@ -257,6 +262,6 @@
     "label": "✨ Realism boost (real face, body shape & skin)",
     "default": true,
     "help": "Adds identity, natural body proportions and real-skin instructions to every prompt.",
-    "text": "Keep the person exactly the same: same face and recognizable identity, facial proportions, eye shape, nose, mouth, jawline, hairline, age, expression and skin tone, and the same natural body shape and proportions. Natural, unretouched skin with real texture, subtle pores, fine hairs and natural tonal variation, not airbrushed, not plastic, no beauty filter. Realistic anatomy and hands, lighting and shadows consistent with the original photo. Photorealistic, natural photo look."
+    "text": "Keep the person from <image1> exactly the same: same face and recognizable identity, facial proportions, eye shape, nose, mouth, jawline, hairline, age, expression and skin tone, and the same natural body shape and proportions. Natural, unretouched skin with real texture, subtle pores, fine hairs and natural tonal variation, not airbrushed, not plastic, no beauty filter. Realistic anatomy and hands, lighting and shadows consistent with the original photo. Photorealistic, natural photo look."
   }
 }
