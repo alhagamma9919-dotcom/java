@@ -263,5 +263,35 @@
     "default": true,
     "help": "Adds identity, natural body proportions and real-skin instructions to every prompt.",
     "text": "Keep the person from <image1> exactly the same: same face and recognizable identity, facial proportions, eye shape, nose, mouth, jawline, hairline, age, expression and skin tone, and the same natural body shape and proportions. Natural, unretouched skin with real texture, subtle pores, fine hairs and natural tonal variation, not airbrushed, not plastic, no beauty filter. Realistic anatomy and hands, lighting and shadows consistent with the original photo. Photorealistic, natural photo look."
-  }
+  },
+  "presets": [
+    {
+      "name": "⚡ Fast",
+      "help": "15 steps, CFG 1, input 75%. Quick tests; slightly less detail.",
+      "set": {
+        "459:458|steps": 15,
+        "459:458|cfg": 1,
+        "@scale": 0.75
+      }
+    },
+    {
+      "name": "⚖ Balanced",
+      "help": "25 steps, CFG 1, full size. Recommended everyday setting.",
+      "set": {
+        "459:458|steps": 25,
+        "459:458|cfg": 1,
+        "@scale": 1
+      }
+    },
+    {
+      "name": "💎 Best quality",
+      "help": "35 steps, CFG 3 (uses the negative prompt: no plastic skin etc.), full size, full-precision loading. About 3× slower.",
+      "set": {
+        "459:458|steps": 35,
+        "459:458|cfg": 3,
+        "@scale": 1,
+        "459:451|weight_dtype": "default"
+      }
+    }
+  ]
 }

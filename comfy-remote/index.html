@@ -503,6 +503,7 @@ async function buildForm(){
     ];
   }
   let html = ui.note ? `<div class="card mute">ℹ ${esc(ui.note)}</div>` : '';
+  if (ui.presets) html += '<div class="card" id="presetCard"></div>';
   if (S) html += '<div class="card" id="slotCard"></div>';
   if (ui.inputScale) html += '<div class="card" id="scaleCard"></div>';
   html += missing.length ? `<div class="card err">⚠ ComfyUI doesn't know these nodes: ${esc([...new Set(missing)].join(', '))}. Install them on the PC (ComfyUI Manager) or this workflow will fail.</div>` : '';
@@ -518,6 +519,7 @@ async function buildForm(){
   for (const f of fields) if (f.kind === 'image') showInputPreview(f);
   if (S) renderSlots();
   if (ui.promptTemplate) renderPtpl();
+  if (ui.presets) renderPresets();
   if (ui.inputScale) renderScale();
   $('#runBtn').disabled = pcState !== 'running';
   updateQuick();
@@ -641,6 +643,21 @@ $('#form').addEventListener('click', e => {
   renderPtpl();
 });
 $('#quickRun').onclick = () => run();
+
+// ---------------------------------------------------------------- one-tap quality presets (ui.presets)
+function renderPresets(){
+  const box = $('#presetCard'); if (!box) return;
+  const cur = vals['@preset'], p = ui.presets.find(x => x.name === cur);
+  box.innerHTML = `<h3>Quality preset</h3><div class="chips" style="margin-top:6px">${ui.presets.map(x =>
+    `<button type="button" data-preset="${esc(x.name)}" class="${x.name === cur ? 'on' : ''}">${esc(x.name)}</button>`).join('')}</div>
+    <div class="mute" style="margin-top:8px">${esc(p ? p.help : 'Tap a preset to set steps, size, speed and models in one go. You can still change anything after.')}</div>`;
+}
+$('#form').addEventListener('click', async e => {
+  const b = e.target.closest('[data-preset]'); if (!b) return;
+  const p = ui.presets.find(x => x.name === b.dataset.preset); if (!p) return;
+  Object.assign(vals, p.set, { '@preset': p.name }); saveVals();
+  await buildForm(); toast('Preset: ' + p.name);
+});
 
 // ---------------------------------------------------------------- multi-photo slots (ui.imageSlots)
 const SLOT_KEY = '@slots';

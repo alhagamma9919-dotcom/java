@@ -239,5 +239,44 @@
     "default": true,
     "help": "Adds identity, natural body, real skin and realistic-motion instructions to every video prompt. Turn off for cartoon/stylized videos.",
     "text": "Keep the person or subject from <Picture 1> exactly the same throughout: same face and recognizable identity, facial proportions, hair, skin tone, natural body shape and proportions, and outfit. Natural, unretouched skin with real texture, not plastic or airbrushed. Realistic, natural motion with real-world physics and believable weight; stable face and body with no morphing, warping, melting or flicker; correct hands and fingers. Lighting and colors consistent with the first frame. Photorealistic, like real camera footage."
-  }
+  },
+  "presets": [
+    {
+      "name": "⚡ Fastest",
+      "help": "Turbo v1.2 LoRA at 4 steps, 0.3 MP, 16 FPS. Quick previews and testing prompts. Needs the 4-step v1.2 LoRA (download script).",
+      "set": {
+        "105:126|value": true,
+        "105:125|value": 4,
+        "105:121|lora_name": "minimax_h3_fl2v_turbo_4step_v1.2_768p_comfyui_bf16.safetensors",
+        "105:121|strength_model": 1,
+        "119|megapixels": 0.3,
+        "105:91|fps": 16,
+        "@scale": 1
+      }
+    },
+    {
+      "name": "⚖ Balanced",
+      "help": "Turbo 4-step v1.2 at 0.45 MP, 24 FPS. Good everyday quality and speed on a 12 GB card.",
+      "set": {
+        "105:126|value": true,
+        "105:125|value": 4,
+        "105:121|lora_name": "minimax_h3_fl2v_turbo_4step_v1.2_768p_comfyui_bf16.safetensors",
+        "105:121|strength_model": 1,
+        "119|megapixels": 0.45,
+        "105:91|fps": 24,
+        "@scale": 1
+      }
+    },
+    {
+      "name": "💎 Best quality",
+      "help": "No turbo, 20 full steps, 0.6 MP, 24 FPS. Best motion and audio, several times slower.",
+      "set": {
+        "105:126|value": false,
+        "105:124|value": 20,
+        "119|megapixels": 0.6,
+        "105:91|fps": 24,
+        "@scale": 1
+      }
+    }
+  ]
 }

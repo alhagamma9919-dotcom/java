@@ -12,7 +12,8 @@ $wanted = @(
   @{ repo = "Comfy-Org/Qwen-Image-2.1"; file = "qwen3.5_9b_qwen_image_2.1_pe_i2i.int8_convrot.safetensors";     dir = "text_encoders" },
   @{ repo = "Comfy-Org/MiniMax-H3";     file = "qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors";                  dir = "text_encoders" },
   @{ repo = "Comfy-Org/MiniMax-H3";     file = "minimax_h3_video_vae_int8_convrot.safetensors";                 dir = "vae" },
-  @{ repo = "Comfy-Org/MiniMax-H3";     file = "minimax_h3_fl2v_turbo_8step_v1.0_comfyui_bf16.safetensors";     dir = "loras" }
+  @{ repo = "Comfy-Org/MiniMax-H3";     file = "minimax_h3_fl2v_turbo_8step_v1.0_comfyui_bf16.safetensors";     dir = "loras" },
+  @{ repo = "lightx2v/Minimax-h3-Turbo"; file = "minimax_h3_fl2v_turbo_4step_v1.2_768p_comfyui_bf16.safetensors"; dir = "loras" }
 )
 
 $trees = @{}
