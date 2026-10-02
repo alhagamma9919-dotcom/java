@@ -58,6 +58,12 @@ put it in `config.json` as `"comfy_api_key"`. The key stays on the PC and is nev
 
 After editing: `Stop-ScheduledTask "Comfy Remote"; Start-ScheduledTask "Comfy Remote"`.
 
+## Start ComfyUI from the PC
+Double-click `start-comfyui.bat`. If ComfyUI is already running (e.g. started from the phone) it just
+opens http://127.0.0.1:8188; otherwise it starts ComfyUI with the `comfy_args` from `config.json`
+and opens the browser when ready. The phone app sees it either way. Only one ComfyUI at a time.
+Desktop shortcut: right-click the file → Show more options → Send to → Desktop.
+
 ## Tips
 - The PC must be awake: Settings → System → Power → Sleep: **Never** (when plugged in).
 - Logs: *PC* tab in the app, or `comfy-remote\comfyui.log`.
