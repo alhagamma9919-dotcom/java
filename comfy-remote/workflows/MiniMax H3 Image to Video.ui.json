@@ -1,5 +1,5 @@
 {
-  "note": "Image → video with sound, on your GPU. For speed on 12 GB: pick the fastvideo 4-step model + Steps 4, 5 s, 0.4 MP.",
+  "note": "Image → video with sound, on your GPU. The video keeps your photo's shape automatically; pick the size in megapixels. Fast mode = 8 steps.",
   "fields": [
     {
       "t": [
@@ -38,39 +38,65 @@
     {
       "t": [
         [
-          "115",
-          "aspect_ratio"
-        ]
-      ],
-      "label": "Aspect ratio",
-      "group": "Video"
-    },
-    {
-      "t": [
-        [
-          "115",
+          "119",
           "megapixels"
         ]
       ],
-      "label": "Resolution (megapixels)",
-      "help": "0.4 ≈ 640×640. Higher = sharper but slower and more VRAM.",
-      "min": 0.2,
-      "max": 2,
-      "step": 0.1,
+      "label": "Video size (megapixels)",
+      "help": "Shape follows the photo automatically. 0.2 ≈ 448×448 · 0.4 ≈ 640×640 · 0.9 ≈ 960×960. Bigger = sharper but slower.",
+      "min": 0.1,
+      "max": 1.5,
+      "step": 0.05,
       "group": "Video"
     },
     {
       "t": [
         [
-          "105:9",
-          "steps"
+          "105:126",
+          "value"
         ]
       ],
-      "label": "Steps",
-      "help": "20 for the normal model · 4 for the fastvideo 4-step model",
+      "label": "⚡ Fast mode (turbo LoRA, 8 steps)",
+      "help": "Much faster, slightly lower motion/audio quality",
+      "group": "Quality"
+    },
+    {
+      "t": [
+        [
+          "105:125",
+          "value"
+        ]
+      ],
+      "label": "Steps (fast mode)",
+      "min": 1,
+      "max": 20,
+      "step": 1,
+      "group": "Quality"
+    },
+    {
+      "t": [
+        [
+          "105:124",
+          "value"
+        ]
+      ],
+      "label": "Steps (normal mode)",
       "min": 1,
       "max": 60,
       "step": 1,
+      "group": "Quality"
+    },
+    {
+      "t": [
+        [
+          "105:121",
+          "strength_model"
+        ]
+      ],
+      "label": "Turbo strength",
+      "min": 0,
+      "max": 1.5,
+      "step": 0.05,
       "group": "Quality"
     },
     {
@@ -91,7 +117,7 @@
         ]
       ],
       "label": "Video model",
-      "help": "Fast: …fastvideo…4step (set Steps 4) · Normal: …pruned_int8 (Steps 20) · Smallest: …w4a8_mixed",
+      "help": "int8_convrot (19.5 GB) recommended on 31 GB RAM · bf16 (37.5 GB) is very slow here · w4a8 (11.7 GB) smallest",
       "group": "Models"
     },
     {
@@ -113,6 +139,27 @@
         ]
       ],
       "label": "Text encoder",
+      "help": "nvfp4_awq (~18 GB) is best on RTX 50 · int8_convrot is 25 GB",
+      "group": "Models"
+    },
+    {
+      "t": [
+        [
+          "105:11",
+          "vae_name"
+        ]
+      ],
+      "label": "Video VAE",
+      "group": "Models"
+    },
+    {
+      "t": [
+        [
+          "105:121",
+          "lora_name"
+        ]
+      ],
+      "label": "Turbo LoRA",
       "group": "Models"
     }
   ],
@@ -121,19 +168,20 @@
       "105:107"
     ],
     [
-      "119"
-    ],
-    [
       "120"
     ],
     [
       "105:91",
       "fps"
+    ],
+    [
+      "119",
+      "resolution_steps"
     ]
   ],
   "inputScale": {
     "megapixels": [
-      "115",
+      "119",
       "megapixels"
     ]
   }
